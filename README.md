@@ -1,3 +1,7 @@
+# Installation and preparation (for Mac)
+`brew cask install mactex-no-gui`
+`sudo tlmgr update --self && sudo tlmgr update --all`
+
 # Skoltech MSc thesis template
 This is an unofficial LaTeX template for MSc thesis in a Skoltech university. Many thanks to Nikolai Semenov (tg:semenovn) as he did most part of the work.
 
