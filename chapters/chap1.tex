@@ -11,23 +11,28 @@
 \chapter{Introduction}
 
 
+
+% copy-paste
+% The architecture of deep convolutional neutral networks (CNNs) has evolved for years, becoming more accurate and faster. Since the milestone work of AlexNet [1],
+% the ImageNet classification accuracy has been significantly improved by novel structures, including VGG [2], GoogLeNet [3], ResNet [4,5], DenseNet [6], ResNeXt [7], SE-Net [8], and automatic neutral architecture search [9,10,11], to name a few.
+
 Since the introduction of the milestone work of AlexNet \cite{alexnet??} the architecture of deep convolutional neutral networks (CNNs) has been constantly evolving over the years, becoming more accurate and faster. 
 
 Many studies have focused on designign new architectures to increase accuracy for image classification on Imagnet without considering speed of the models, but real-world systems often require high recognition accuracy with low latency.
 
-There are papers which focus on accuracy or low parameter count or improving the models throught modified training recipes but no one (really no one???) have combined all this constarains together
+There are papers which focus on imroving speed by reducing number of computations inside network or by minimizing number of parameters used. In Chapter 2 we discuss why such optimization don't always result in low inference speed on real-life accelerators.
 
-But 
+
+In Chapter 3 we discuss recent modifications for training recipes and minor changes to architectures which improve model performance without compromising speed
+
+In Chapter 4 we propose a novel desing choice not discussed in the literature before which is one of main points of this paper
+
+In Chapter 5 we show result of out experiments which try to balance on speed-accuracy tradeoff by applying only changes that have minor impact on speed. By combining multple minor changes we obtain close to SOTA performance on large-scale image recogntiong dataset ImageNet. 
 
 
 не могу писать на английском, потому что постоянно отвлекаюсь и пытаюсь копировать, а нужно изливать свои мысли, так будет быстрее (((
 
 
-
-
-% copy-paste
-% The architecture of deep convolutional neutral networks (CNNs) has evolved for years, becoming more accurate and faster. Since the milestone work of AlexNet [1],
-% the ImageNet classification accuracy has been significantly improved by novel structures, including VGG [2], GoogLeNet [3], ResNet [4,5], DenseNet [6], ResNeXt [7], SE-Net [8], and automatic neutral architecture search [9,10,11], to name a few.
 
 
 Something goes here
@@ -36,6 +41,7 @@ intro is close to \cite{lin2020neural_genet} & \cite{ridnik2021_tresnet}
 
 О чём блять вообще диплом? хочу быструю и одновременно качественную сетку. 
 Многие работы принимают во внимание только качество, но для практических применений очень важна именно скорость, поэтому мы хотим постоянно иметь её во внимание. Есть много разных акслелераторов (см. отдельную главу о них), но эта работа фокусируется исключительно на современных видеокартах. Полученные выводы могут не выполняться для мобильных платформ (тут ссылочки на работы об этом). 
+
 
 \chapter{Chapter2 (Speed)}
 
@@ -48,11 +54,30 @@ Real world tasks often have computational constarains on the design of arcitecur
 
 To measure complexity of the model some works use number of computations it does. Examples of such metrics are floating point operations (FLOPs) and multiply-accumulate operations (MACCs). Other focus on minimizing of number of trainable parameters. This metrics are indirect approximation of direct metric such as speed or latency. Previous works has shown \cite{design_spaces} that factors affecting inference latency on modern accelerators are complicated and direct measurement on target device should be preffered. (тут можно еще цитирований из \cite{ma2018shufflenetv2} p.2 набрать).
 
-There are many accelerators available, this works focuses on optimizing and developing networks specially optimized for moden GPUs. 
+The deep learning models could be run on CPU or on a number of other accelerators. Most popular ones being GPUs (graphic processing units) and TPUs (Tensor processing units), ... (тут примеры других ускорителей). (тут статистика по использованию акслелераторов)
+
+This works focuses on optimizing and developing networks specially optimized for modern GPUs, such narrow focus allows to better utilize the knoledge about what constrains speed the most. Obtained results may not be applicable if models have to be run on CPUs or mobile devices (тут можно что-то из Effnet lite процитировать)
+
+% \cite In-datacenter performance analysis of tensor processing units
+% \cite The deep learning revolution and its implication for computer architecture and chop desin
+
+\subsection{Definitions}
+
+"It’s dot products all the way down" 
+
+Many of the computations inside neural networks are dot products like this: $y = w[0]*x[0] + w[1]*x[1] + \cdots \ldots w[n] * x[n]$ where $w$ and $x$ are two vectors and $y$ is a scalar. There are two main ways to calculate number of computations in such operation. First is to count $ w[0] * x[0] + \cdot $ as one multiply-accumulate or 1 MACC. The __accumulation__ operation here is addition. In the example above we have $n$ MACCs. 
 
 
-\sbusection{Definitions}
-In this work, the definition of FLOPs follows \cite{zhang2018shufflenet}, i.e. number of multiply-adds
+NOTE: 
+Technically speaking there are only n - 1 additions in the example above. Think of MACCs as being an approximation, simular to Big-O notation used in approximation of algorithm complexity.
+
+Second is to count number of direct floating point operations (FLOPs), in the example above there are $2n - 1$ FLOPs, since there are n multiplications and n additions. FLOPs should not be confused with floating point operations per second (FLOPS) used to measure hardware performance. Because matrix-multiplications is the core operation in neural networks, many modern accelerators have special multiply-and-accumulate units, called tensor cores 
+% \cite Volte: performance and programmability 
+in GPUs and matrix multply units in TPUs % \cite two papers from comments above [30] [14] in Searching ....
+This means that 1 MACC could be perfomed usign 1 instruction, so in this work definition of FLOPs follows \cite{zhang2018shufflenet}, i.e. number of multiply-adds. Making FLOPs and MACC interchangeble.
+
+
+
 
 \subsection{Why not FLOPS}
 в статьях HardNet и Searching for Fast Model Families on Datacenter Accelerators (и блог посте из презентации) есть детальное описание того, почему FLOPS не работате и 
@@ -79,12 +104,15 @@ Defininiot of number of trainable parameters
 \subsection{Examples of optimization}
 Тут хочется привести пример Space2Depth модуля, который повышает эффективность за счет увеличения плотности операций в начале сети. 
 
+ + тут можно написать про FusedConv который есть в EffNet v2, но появился вроде в EffNetX (??) 
 % кусок нагло спизжен из Searching for Fast .... нужно будет переписать. 
 еще про space2depth написано в статье \cite{ridnik2021_tresnet}
 
 
 3.1. Efficient space-to-depth and space-to-batch
 As pointed out in Section 2, convolutions need high parallelism in all dimensions (depth, batch, and spatial) to achieve high speed on TPUs and GPUs. However, insufficient parallelism because of the small depth and batch is the usual cause of low utilization and low performance on matrix units. We augment the search space with accelerator-friendly spaceto-depth and space-to-batch ops to increase depth and batch dimensions while keeping the total tensor volume the same. For space-to-depth ops, instead of using the memorycopy-reshape based ops provided by frameworks such as TensorFlow [6] and Pytorch [42], we customize an $n \times n$ convolution with stride-n to perform the space-to-depth operation, reshaping an $H \times W \times C$ tensor to an $H / n \times W / n \times C * n^{2}$ tensor. This approach has two advantages: 1) convolutions are much preferred by TPUs and GPUs because of their high operational intensity and execution efficiency; 2) in addition to reshaping the input tensor to improve operational intensity and efficiency, the $n \times n$ convolutions can also be trained
+
+
 
 Chapter2.1
 
