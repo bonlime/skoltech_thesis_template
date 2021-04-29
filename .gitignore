@@ -1,5 +1,8 @@
 ## my gitignore
 
+# python
+.ipynb_checkpoints/
+
 # MAC files
 .DS_Store
 
