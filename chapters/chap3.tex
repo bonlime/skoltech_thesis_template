@@ -1,0 +1,70 @@
+
+\chapter{Chapter3 Performance}
+
+%%
+нужно понять в каком порядке излагать мысль вообще. есть статьи, которые улучшают архитектуру, а есть которые предлагают новые способы обучения. проблема в том, что это не всегда разные статьи. новые блоки часто идут вместе с новыми трюками и сложно их разделить. (о чём пишут в compunding performance и гораздо более явно в resnet-RS). можно написать то же самое и скзаать что "я был первым" что на самом деле так, я об этом еще в начале прошлого года расговаривал). но мне для диплома нужно много текста, поэтому надо как-то завернуть рассжудения. как завернуть? 
+
+разница между compunding и resnetRS в том, что первые бустят resnet без явного разделения что приходит от новых методов, а что приходит от изменения архитектуры, а RS явно показывает что приходит от архитектуры. 
+
+%%
+<<In the literature, however, most refinements are ei- ther briefly mentioned as implementation details or only vis- ible in source code.>>
+
+Models suitable for real-life deployment should be not only fast but also accurate. Definitonon of "accurate" differs in literature. In this paper we use top1 classification accuracy on imagenet as proxy for model performance on down-stream tasks. Section (???) discusses this choice in more details.
+
+
+% at- tempts to combine existing techniques to create a practi- cal model are still uncommon
+
+(нужно еще где-то сказать что со временем растет уровень того что такое бейзлайн. если в 2016м году резнет50 был 75.6, то сейчас если он ниже 79, то сравнение нечестное. самое честное что можно (и нужно делать) это использовать одинаковые трюки как во время обучения своей новой супер-пупер мега модели так и во время обучения старого-доброго резнета)
+
+\subsection{Why Imagenet}
+
+Imagenet Large Scale Vision Recognition Challenge also known as ILSVRC2012 or simply Imagenet is ..... (тут чутка про историю датасета и разер и наврено можно написать что это подмножество). ILSVRC2012 is the most used dataset in computer vision (cite something, maybe after MNIST and CIFAR). In recent years with models becoming larger and demanding more and more data, it became a de-facto stardart benchmark for any new architecture. Optimizing j
+
+Since the breakthrought of AlexNet improving convolutional neural networks lead to improvements in other fields of computer vision. Typically researchers optimize models on classification problems using ImageNet (cite it) as proxy. It has been shown (where cite) than improvments from Imagenet do transfer to other domains.  
+
+In this papepr we will use top1 1 classification accuracy on Imagenet as metric of model performance. 
+
+Top-1 Thetop-1 is a measure of classification accuracy on the ILSVRC2012 [27] validation dataset. The validation dataset consists of 50,000 images of 1,000 classes.
+
+(идея параграфа в том, что метрика не идеальная, но содйте. плюскуча рисерча накоплена в этой области, не выкидывать же его)
+While some researches has objected that it's valid, it does correlate and this is what we are interested in (cite Are we done with Imagenet....)
+
+
+
+\subsection{How to do better}
+
+
+The performance of a vision model is a product of the architecture and training methods (resnet-RS also adds scaling strategy here).
+(combounding говорит что это architecture \& regularization, что кмк логичнее чем какой-то скейлинг) 
+
+Many stuides emphasizes on modifing model architectures through new blocks (cite Inception), or new architectural choices (cite ResNet ) (тут можно подбронее написать кто что предлагает
+
+Unlike these studies which focus on designing new network architecture, \cite{he2019bag_of_tricks} proposes different approaches to improve model performance. They noted that performance can be improved not only through changes in the model structure, but also through other aspects of network training such as data preprocessing, augmentations, regularization techniques and parameter initialization (cite NFNet). They also demonstrate that these minor “tricks” play a major part in boosting model performance when applied in combination. As a result of using these tricks, ILSVRC2012 top-1 validation ac- curacy of ResNet-50 improved from 75.3\% to 79.29\% and MobileNet improved from 69.03\% to 71.90\%. This im- provement is highly significant because it shows as much performance improvement as a novel network design does. 
+
+Novel architectures are often simultaneously introduced with other critical – and less publicized – changes in the details of the training methodology and hyperparameters. Additionally, new architec- tures enhanced by modern training methods are sometimes compared to older architectures with dated training meth- ods (e.g. ResNet-50 with ImageNet Top-1 accuracy of 76.5\% \cite{he2016deep_resnetv2}. Our work addresses these issues and empirically studies the impact of training methods and scaling strategies on the popular ResNet architecture
+
+
+(когда буду говорить про пайплайн, нужно вставить что дефолтные аугментации очень слабые и хотя это uncommon to report training accuracy for the model, one can observe a very strong overfitting using the default augmentation. it means that almost any additional regularization would have a noticable effect, but it also means that что они бьют лежачего в общем    )
+
+
+The questin is, when does ResNet50 stop being ResNet50? How many architecture changes is needed to be able to call it a new model? Why majority of people do not modify block structure, while making strong modifications of blocks themselves? The anwser is probably because experiments on ImageNet are quite expensive and not everyone has resources and time and knowledge to explore all possible variations. This is where papers like mine come into place with thorough examination of already proposed techniques and how do they combain together
+
+
+(когда буду говорить про MixUp сделать ремаку о том что есть два типа (внутри батча и с другим батчом) и что второй вариант работает лучше, ссылаясь на свои собственные эксперименты если найде или на Componding). 
+
+
+(когда буду говорить про SE vs ECA сделать ремарку о том, что авторы второго не правы, когда мерят ФЛОПс и говорят что у них меньше. может быть добавить экспреименты со скоростью если делать просто GAP без каких либо операций и показать что он занимает бОльшую чать от замедления (сколько это кстати? 60? 70?))
+
+
+Chapter3 (Accuracy)
+Трудно сравнивать чужие модели и архитектуры, потому что 1. не совпадают рецепты обучения 2. некоторые вещи не указывают в статьях, они есть только в коде, поэтому важно учить на своей код базе, чтобы убедиться что все одинаковое. 
+
+(тут ли?)
+Говорю о том что в последнее время появилось много малненьких улучшений, которые не замедляют сеть, но дают буст по качетсву \cite{zhang2019making_aa_shift_invariant} или space2depth  \cite{ridnik2021_tresnet} в начале сети. были статья которые объединяли это все вместе \cite{lee2020compounding_improvements} \cite{bello2021revisiting_resnet} (ну и как бы мои результаты не лучше чем у них, просто они тупо стакают все изменения на резнет, а я еще и архитектуру меняю после этого, чтобы учесть архитектруные недостатки
+
+
+Глава2 - про скорость и связь со флопсами и все такое
+Глава3 - про улучшения обучения связанные с ванильным R50
+Глава4 - про связку небольших изменений и медленные изменения архитектуры опираясь на то, что работает у других
+Глава5 - design choice not present in current literature
+
