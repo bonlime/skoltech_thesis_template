@@ -3,15 +3,23 @@
 
 % bottlenecks induced by FLOPs oriented optimizations - говорю о том, что определине "маленькая" сеть и "быстрая" сеть неоднозначны. можно смотреть на параметры, можно на FLOPS, можно на MAC, можно на real-life performance. ссылаюсь на работы которые показывают что связь между FLOPS | params | mac и скоростью нифига не линейная. можно вставить графики сравения по FLOPS похожие на те что в \cite{ma2018shufflenetv2}
 
-\section{Intro (again)}
+\section{Introduction)}
 
-Real world tasks often have computational constarains on the design of arcitecures. Design of light-weight models with good speed-accuracy tradeoffs has been explored extensively before \cite{howard2017mobilenetv1} \cite{mobilenetv2} \cite{ma2018shufflenetv2} \cite{zhang2018shufflenet}.  % \cite{Xception} 
+% сложно разделить скорость и качество, кпотому что часто новые блоки которые быстрее, одновременно дают еще и более хорошее качество. Цель это главы скорее в другом - понять от чего зависит скорость конкретных блоков (memory bound) и почему некоторые слои лучше не использовать. Эта глава закладывает фундамент для дизайна более хорошей сетки в следующих главах
 
-To measure complexity of the model some works use number of computations it does. Examples of such metrics are floating point operations (FLOPs) and multiply-accumulate operations (MACCs). Other focus on minimizing of number of trainable parameters. This metrics are indirect approximation of direct metric such as speed or latency. Previous works has shown \cite{design_spaces} that factors affecting inference latency on modern accelerators are complicated and direct measurement on target device should be preffered. (тут можно еще цитирований из \cite{ma2018shufflenetv2} p.2 набрать).
+
+Real world tasks often have computational constarains on the design of arcitecures. Design of light-weight models with good speed-accuracy tradeoffs has been explored extensively before \cite{howard2017mobilenetv1} \cite{mobilenetv2} \cite{ma2018_shufflenetv2} \cite{zhang2018_shufflenet}.  % \cite{Xception} 
+
+To measure complexity of the model some works use number of computations it does. Examples of such metrics are floating point operations (FLOPs) and multiply-accumulate operations (MACCs). Other focus on minimizing of number of trainable parameters. This metrics are indirect approximation of direct metric such as speed or latency. Previous works has shown \cite{design_spaces} \cite{lee2020_compounding_improvements} that factors affecting inference latency on modern accelerators are complicated and direct measurement on target device should be preffered. (тут можно еще цитирований из \cite{ma2018_shufflenetv2} p.2 набрать). This phenomenon is illustrated on Figure {???}, which shows that speed doesn't correlate with number of FLOPs.   
+% TODO actually draw this figure
+
+The goal of this chapter is to explore bottlenecks induced by FLOPs oriented optimizations and show that taking into consideration limitations of current accelerators could help to develop guidelines for architecture design which do not compromise speed. We first explore the memory-bound problem theoretically, then prove out reasoning with experiments on current GPU accelerators, and finally come up with simple principles to avoid. 
 
 The deep learning models could be run on CPU or on a number of other accelerators. Most popular ones being GPUs (graphic processing units) and TPUs (Tensor processing units), ... (тут примеры других ускорителей). (тут статистика по использованию акслелераторов)
 
-This works focuses on optimizing and developing networks specially optimized for **modern GPUs**, such narrow focus allows to better utilize the knoledge about what constrains speed the most. Obtained results may not be applicable if models have to be run on CPUs or mobile devices (тут можно что-то из Effnet lite процитировать)
+This works focuses on optimizing and developing networks specially optimized for **modern GPUs**, such narrow focus allows to better utilize the knoledge about what constrains speed the most. Obtained results may not be applicable if models have to be run on CPUs or mobile devices (тут можно что-то из Effnet lite процитировать). 
+
+
 
 % \cite In-datacenter performance analysis of tensor processing units
 % \cite The deep learning revolution and its implication for computer architecture and chop desin
@@ -20,36 +28,37 @@ This works focuses on optimizing and developing networks specially optimized for
 
 "It’s dot products all the way down" 
 
-Many of the computations inside neural networks are dot products like this: $y = w[0]*x[0] + w[1]*x[1] + \cdots \ldots w[n] * x[n]$ where $w$ and $x$ are two vectors and $y$ is a scalar. There are two main ways to calculate number of computations in such operation. First is to count $ w[0] * x[0] + \cdot $ as one multiply-accumulate or 1 MACC. The __accumulation__ operation here is addition. In the example above we have $n$ MACCs. 
+Many of the computations inside neural networks are dot products like this: $y = w[0]*x[0] + w[1]*x[1] + \cdots \ldots w[n] * x[n]$ where $w$ and $x$ are two vectors and $y$ is a scalar. There are two main ways to calculate number of computations in such operation. First is to count $ w[0] * x[0] + \cdot $ as one multiply-accumulate or 1 **MACC**. The __accumulation__ operation here is addition. In the example above we have $n$ MACCs. 
 
 
-NOTE: 
-Technically speaking there are only n - 1 additions in the example above. Think of MACCs as being an approximation, simular to Big-O notation used in approximation of algorithm complexity.
+NOTE: (need to make this footnote)
+Technically speaking there are only n - 1 additions in the example above. Think of MACCs as being an approximation, similar to Big-O notation used in approximation of algorithm complexity.
 
-Second is to count number of direct floating point operations (FLOPs), in the example above there are $2n - 1$ FLOPs, since there are n multiplications and n additions. FLOPs should not be confused with floating point operations per second (FLOPS) used to measure hardware performance. Because matrix-multiplications is the core operation in neural networks, many modern accelerators have special multiply-and-accumulate units, called tensor cores 
+Second is to count number of direct floating point operations (**FLOPs**), in the example above there are $2n - 1$ FLOPs, since there are n multiplications and n additions. FLOPs should not be confused with floating point operations per second (FLOPS) used to measure hardware performance. Because matrix-multiplications is the core operation in neural networks, many modern accelerators have special multiply-and-accumulate units, called tensor cores 
 % \cite Volte: performance and programmability 
-in GPUs and matrix multply units in TPUs % \cite two papers from comments above [30] [14] in Searching ....
+in GPUs and matrix multiply units in TPUs % \cite two papers from comments above [30] [14] in Searching ....
 This means that 1 MACC could be perfomed usign 1 instruction, so in this work definition of FLOPs follows \cite{zhang2018shufflenet}, i.e. number of multiply-adds. Making FLOPs and MACC interchangeble.
 
-Another important property of the netork is dynamic random-access memory(DRAM) traffic for read and write of model parameters, activations and intermidiate feature maps. Measuring exact number of DRAM read/write bytes could be complicated and requires special software. DRAM could be approximated by memory footprints of input and output tensors. This metric is called Convolutional Input/Output (CIO) ( cite HardNet ) and is proportional to to the real DRAM traffic measurement. For a typical convolution kernel with $c$ channels, width $w$ and height $h$ CIO could be calculated using eq ??
+Another important property of the network is dynamic random-access memory (**DRAM**) traffic for read and write of model parameters, activations and intermediate feature maps. Measuring exact number of DRAM read/write bytes could be complicated and requires special software. DRAM could be approximated by memory footprints of input and output tensors plus memory required for storing weights. This metric is called Convolutional Input/Output (CIO) \cite{chao2019_hardnet} and is proportional to to the real DRAM traffic measurement. For a typical convolution $K \times K$ kernel with $C$ channels, width $W$ and height $H$ CIO could be calculated using eq ??
+% TODO rewrite formula and add weighs term
 
 $$
-C I O=\sum_{l}\left(c_{i n}^{(l)} \times w_{i n}^{(l)} \times h_{i n}^{(l)}+c_{o u t}^{(l)} \times w_{o u t}^{(l)} \times h_{o u t}^{(l)}\right)
+C I O=\sum_{l}\left(C_{in}^{(l)} \times w_{in}^{(l)} \times h_{in}^{(l)}+c_{o u t}^{(l)} \times w_{o u t}^{(l)} \times h_{o u t}^{(l)}\right)
 $$
 
 
 
 \section{Why FLOPs and latency do not correlate}
 
-We reasonably assume that model speed is either compute-bound or memory-(bandwidth)-bound as they don't fit in on-chip memories. DRAM access can dominate system inference time due to limited memory bandwidth. An ML model can achieve peak FLOPs/sec and fully utilize accelerators only when its operational density, which is MACs over CIO (MoC) is sufficiently large (and is enough to saturate accelerators performance ?? need to clarify __saturate__). 
+We reasonably assume that model speed is either compute-bound or memory-(bandwidth)-bound as they don't fit in on-chip memories. DRAM access can dominate system inference time due to limited memory bandwidth. An ML model can achieve peak FLOPs/sec and fully utilize accelerators only when its operational density, which is MACs over CIO (MoC) is sufficiently large (and is enough to saturate accelerators performance (?? need to clarify __saturate__). 
 
-(вотвну сюда, потом разберусь в compunding тоже говорил что не наблюдают связи между FLOPS и скоростью. может надо воткнуть это как рефернс куда-то)
+% (вотвну сюда, потом разберусь в compunding тоже говорил что не наблюдают связи между FLOPS и скоростью. может надо воткнуть это как рефернс куда-то)
 %% maybe need to move MoC into definition??
 %% also later I use a slightly different MoC which also accouts for number of parameters accesses. Need to modify definition here, or use true MoC in later chapter
 
 From that we can see why minimizing number of FLOPs don't always correlate with latency, such minization is only reasonable when we are compute-bounded in this layer. 
 
-Several papers has observed this lack of correlation and proposed several key principles for desingin high speed models specifically on GPUs (cite something). Rather than providing them as is we will validate each claim with a set of experiments to observe the switch between compute-bound/memory-bound regions directly.
+Several papers has observed this lack of correlation and proposed several key principles for desingin high speed models specifically on GPUs \cite{design_spaces} \cite{lee2020_compounding_improvements}. Rather than providing them as is we will validate each claim with a set of experiments to observe the switch between compute-bound/memory-bound regions directly for different type of layers.
 
 \subsection{Depthwise Separable Convolutions}
 
@@ -102,9 +111,12 @@ Usual convolution has: $ K \times K \times C_{in} \times C_{out} \approx 147k$ p
 % 43.1 TFLOPS, 29.1 TFLOPS
 % Times are in microseconds (us).
 % IMPROTANT CONCLUSION. While DW is always much slower than regular, on deeper feature maps it significantly reduces number of FLOPs
-% making it anyway better. On my GPU the  
+% making it anyway better. On my GPU the speed is better than in the article I use for reference in the paper. Will leave their numbers 
+% because they better illustrate the problem
 
 show that regular convolutions achieve up to 30.3 TFLOP/sec, while DepSep convolutions only achieve 3.8 TFLOP/sec. We can see that despite much lower number of FLOPs, DepSep convolutions are much worse in utilizing modern accelerator. To prove that in this case we're memory-bounded, let's compute arithmetic intesity (MoC) to better undestand computational profile of each convolution. We naively estimate memeory access to be sum of number of parameters and number of activations, this assumtion will give us a lower bound, when no redundant memory accesses are performed. 
+
+% попытался понять по какой логике получаются цифры MB и на сайте откуда я их взял, они почему-то ровно в 2 раза больше. интересно это из-за flot32? на практике интересен только порядок, а он от этой консанты не зависит
 
 Usual convolution has: $ N_{parameters} + N_{activations} = K \times K \times C_{in} \times C_{out} + (C_{in} + C_{out}) \times H \times W \approx 26.0$ MB of memory accesses. Depthwise separable convolution has: $ N_{parameters} + N_{activations} = K \times K \times C_{in} + C_{in} \times C_{out} + (C_{in} + C_{out}) \times H \times W \approx 25.7$ MB of memory accesses. Then MoC is 569.5 and 68.4 for regular and DepSep convolution respectively. We immediately see that, normal convolutions have almost ten times as much arithmetic intensity compared to DepSep convolutions, is much lower to compute-bound than to memory-bound effectively utilizing accelerator. 
 
@@ -112,7 +124,7 @@ The conclusion from above analysis is that DepSep convolutions are only efficien
 
 \subsection{Pointwise convolutions}
 
-Pointwise convolution is a 2d convolution with kernel size being 1x1, they are also referenced as conv1x1 later in this section. This type of convolutions is used intensively in Bottleneck of ResNet50 model and in almost every model after that (cite ... as many papers as we want). Pointwise convolution most often are used to increase/decrese number of channels (cite ResNet again) or to mix information betwenn channels after Depthwise convolution. While conv1x1 are cheap in terms of FLOPs the have very almost the same CIO as regular 3x3 convolutin which means they may become memory-bottlenecks. This type of convolutinos may also become memory-bounded when ratio of number of input channels to output channels is large. Both this properties could be investigated (ужасно написано кмк).
+Pointwise convolution is a 2d convolution with kernel size being 1x1, they are also referenced as conv1x1 later in this section. This type of convolutions is used intensively in Bottleneck of ResNet50 model and in almost every model after that (cite ... as many papers as we want). Pointwise convolution most often are used to increase/decrese number of channels (cite ResNet again) or to mix information betwenn channels after Depthwise convolution. While conv1x1 are cheap in terms of FLOPs the have almost the same CIO as regular 3x3 convolutin which means they may become memory-bottlenecks. This type of convolutinos may also become memory-bounded when ratio of number of input channels to output channels is large. Both this properties are investigated by experiments in the following section.
 
 In fig ?? (график с MACs over CIO похожий на график из HardNet) you can see 
 (тут порассуждать о том, что conv1x1 недоутилизируют аккселератор, потому что вычислений маловато. единственное )
@@ -141,22 +153,22 @@ The conclusion from above analysis is that avoiding pointwise convolutions at th
 
 (еще была статья про \cite{zhou2020_rethinking} где авторы вроде чето такое же предалагали??)
 
-\subsection{Conclusion}
+\subsection{Conclusion} \label{subsec: speed_conclusion}
 
+Compute on modern accelerators due to use of matrix-multiply-and-accumulate units is significantly cheaper that on CPUs, resulting in ~35x higher TeraOps/sec of GPU v100 over typical CPU \cite{li2021_searching}. To reach close-to-peak performance models need to have high operational intensite (arithmetic density), because for GPUs their peak computational rate (TeraOps/s) grows much faster than memeory bandwidth (Bytes/s). It means that minimizing number of FLOPs in only reasonable when we are in computationally-bounded region, otherwise we should focus on increaseing the arithmetic density of operations.  
 
-(это еще сырой кусок, потом перепишу)
-
-* Due to use of matrix-multiply-and-accumulate units compute is significantly cheaper that on CPUs, resulting in ~35x higher TeraOps/sec of GPU v100 over typical CPU (cite something? can find in Searching for Fast Models)
-
-* 
-
-Empirical studies \cite{desing_spaces} has shown the factors affecting the inference latency on modern GPUs are rather complicated and is hard to predict directly. But at the same time following the principles mentioned below (above?) consistenly correlates with reduction in inference time. 
- 
 
 \subsection{Applying principle on practice}
+Several papers reached the same conclusions as in the section \ref{subsec: speed_conclusion} \cite{li2021_searching} \cite{lin2020neural_genet} and applied them on practice. Here we present example blocks which try to increase operational density for achieving higher latency and speed. 
 
 
-Не могу определиться с порядоком. После рассуждений о структруе ограничений наврено нужно провести несколько экспериментов, а потом объеденить это в key principles, которые будут чем-то средним между принципами из HardNet, Searching.... и какими-то моими рассуждениями
+**Space-to-depth**  
+
+As pointed in previous section, convolutions benefit from high parallelism in all dimensions (depth, batch, and spatial) for better utilization of GPUs and higher speed. Space-to-depth module illustrated on \ref{fig: space2depth} increases depth dimension by rearrangin pixels from spatial dimension, while keeping the total tensor volume the same. 
+
+% TODO: run speed comparison between default s2d implementation and the one proposed in Searching ... with conv2x2 stride 2
+
+\includegraphics[height=3cm]{images/space2depth.pdf}\label{fig: space2depth}
 
 
 
@@ -170,3 +182,4 @@ Empirical studies \cite{desing_spaces} has shown the factors affecting the infer
 
 3.1. Efficient space-to-depth and space-to-batch
 As pointed out in Section 2, convolutions need high parallelism in all dimensions (depth, batch, and spatial) to achieve high speed on TPUs and GPUs. However, insufficient parallelism because of the small depth and batch is the usual cause of low utilization and low performance on matrix units. We augment the search space with accelerator-friendly spaceto-depth and space-to-batch ops to increase depth and batch dimensions while keeping the total tensor volume the same. For space-to-depth ops, instead of using the memorycopy-reshape based ops provided by frameworks such as TensorFlow [6] and Pytorch [42], we customize an $n \times n$ convolution with stride-n to perform the space-to-depth operation, reshaping an $H \times W \times C$ tensor to an $H / n \times W / n \times C * n^{2}$ tensor. This approach has two advantages: 1) convolutions are much preferred by TPUs and GPUs because of their high operational intensity and execution efficiency; 2) in addition to reshaping the input tensor to improve operational intensity and efficiency, the $n \times n$ convolutions can also be trained
+ 
