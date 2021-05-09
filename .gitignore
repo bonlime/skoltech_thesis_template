@@ -1,4 +1,10 @@
+## my gitignore
+
+# python
 .ipynb_checkpoints/
+
+# MAC files
+.DS_Store
 
 ## Core latex/pdflatex auxiliary files:
 *.aux
