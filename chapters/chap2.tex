@@ -17,7 +17,7 @@ The goal of this chapter is to explore bottlenecks induced by FLOPs oriented opt
 
 The deep learning models could be run on CPU or on a number of other accelerators. Most popular ones being GPUs (graphic processing units) and TPUs (Tensor processing units), ... (тут примеры других ускорителей). (тут статистика по использованию акслелераторов)
 
-This works focuses on optimizing and developing networks specially optimized for **modern GPUs**, such narrow focus allows to better utilize the knoledge about what constrains speed the most. Obtained results may not be applicable if models have to be run on CPUs or mobile devices (тут можно что-то из Effnet lite процитировать). 
+This works focuses on optimizing and developing networks specially optimized for \textbf{modern GPUs}, such narrow focus allows to better utilize the knoledge about what constrains speed the most. Obtained results may not be applicable if models have to be run on CPUs or mobile devices (тут можно что-то из Effnet lite процитировать). 
 
 
 
@@ -28,7 +28,7 @@ This works focuses on optimizing and developing networks specially optimized for
 
 "It’s dot products all the way down" 
 
-Many of the computations inside neural networks are dot products like this: $y = w[0]*x[0] + w[1]*x[1] + \cdots \ldots w[n] * x[n]$ where $w$ and $x$ are two vectors and $y$ is a scalar. There are two main ways to calculate number of computations in such operation. First is to count $ w[0] * x[0] + \cdot $ as one multiply-accumulate or 1 **MACC**. The __accumulation__ operation here is addition. In the example above we have $n$ MACCs. 
+Many of the computations inside neural networks are dot products like this: $y = w[0]*x[0] + w[1]*x[1] + \cdots \ldots w[n] * x[n]$ where $w$ and $x$ are two vectors and $y$ is a scalar. There are two main ways to calculate number of computations in such operation. First is to count $ w[0] * x[0] + \cdot $ as one multiply-accumulate or 1 **MACC**. The \textit{accumulation} operation here is addition. In the example above we have $n$ MACCs. 
 
 
 NOTE: (need to make this footnote)
@@ -50,7 +50,7 @@ $$
 
 \section{Why FLOPs and latency do not correlate}
 
-We reasonably assume that model speed is either compute-bound or memory-(bandwidth)-bound as they don't fit in on-chip memories. DRAM access can dominate system inference time due to limited memory bandwidth. An ML model can achieve peak FLOPs/sec and fully utilize accelerators only when its operational density, which is MACs over CIO (MoC) is sufficiently large (and is enough to saturate accelerators performance (?? need to clarify __saturate__). 
+We reasonably assume that model speed is either compute-bound or memory-(bandwidth)-bound as they don't fit in on-chip memories. DRAM access can dominate system inference time due to limited memory bandwidth. An ML model can achieve peak FLOPs/sec and fully utilize accelerators only when its operational density, which is MACs over CIO (MoC) is sufficiently large (and is enough to saturate accelerators performance (?? need to clarify \textit{saturate} ). 
 
 % (вотвну сюда, потом разберусь в compunding тоже говорил что не наблюдают связи между FLOPS и скоростью. может надо воткнуть это как рефернс куда-то)
 %% maybe need to move MoC into definition??
@@ -131,7 +131,7 @@ In fig ?? (график с MACs over CIO похожий на график из H
 
 We can perform analysis of MoC simular to the previous chapter. We will compare achieved FLOPS when we apply conv1x1 in the beginning of the network and when we apply them in the deeper layers. Let $C_{in}, C_{out}, H, W$ be number of input/output channels, feature width and height. Kernel size $K$ is 1. First case: $H=W=224, C_{in} = 16, C_{out}=128$, Second case: $H=W=32, C_{in} = C_{out}=1024$, representing a typcial conv1x1 at the beginning and in the deeper layers of a typcial ResNet-like model.
 
-**(need better naming than __first__ and __second__)**
+\textbf{need better naming than \textit{first} and \textit{second}}
 
 First conv has $ 1 \times 1 \times C_{in} \times C_{out} \approx 2k$ parameters. And $ 1 \times 1 \times C_{in} \times C_{out} \times H \times W \approx 0.1 $ GFLOPs
 
