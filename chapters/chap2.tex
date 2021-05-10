@@ -8,9 +8,9 @@
 % сложно разделить скорость и качество, кпотому что часто новые блоки которые быстрее, одновременно дают еще и более хорошее качество. Цель это главы скорее в другом - понять от чего зависит скорость конкретных блоков (memory bound) и почему некоторые слои лучше не использовать. Эта глава закладывает фундамент для дизайна более хорошей сетки в следующих главах
 
 
-Real world tasks often have computational constarains on the design of arcitecures. Design of light-weight models with good speed-accuracy tradeoffs has been explored extensively before \cite{howard2017mobilenetv1} \cite{mobilenetv2} \cite{ma2018_shufflenetv2} \cite{zhang2018_shufflenet}.  % \cite{Xception} 
+Real world tasks often have computational constarains on the design of arcitecures. Design of light-weight models with good speed-accuracy tradeoffs has been explored extensively before \cite{howard2017_mobilenetv1} \cite{sandler2018_mobilenetv2} \cite{ma2018_shufflenetv2} \cite{zhang2018_shufflenet}.  % \cite{Xception} 
 
-To measure complexity of the model some works use number of computations it does. Examples of such metrics are floating point operations (FLOPs) and multiply-accumulate operations (MACCs). Other focus on minimizing of number of trainable parameters. This metrics are indirect approximation of direct metric such as speed or latency. Previous works has shown \cite{design_spaces} \cite{lee2020_compounding_improvements} that factors affecting inference latency on modern accelerators are complicated and direct measurement on target device should be preffered. (тут можно еще цитирований из \cite{ma2018_shufflenetv2} p.2 набрать). This phenomenon is illustrated on Figure {???}, which shows that speed doesn't correlate with number of FLOPs.   
+To measure complexity of the model some works use number of computations it does. Examples of such metrics are floating point operations (FLOPs) and multiply-accumulate operations (MACCs). Other focus on minimizing of number of trainable parameters. This metrics are indirect approximation of direct metric such as speed or latency. Previous works has shown \cite{radosavovic2020_designing} \cite{lee2020_compounding_improvements} that factors affecting inference latency on modern accelerators are complicated and direct measurement on target device should be preffered. (тут можно еще цитирований из \cite{ma2018_shufflenetv2} p.2 набрать). This phenomenon is illustrated on Figure {???}, which shows that speed doesn't correlate with number of FLOPs.   
 % TODO actually draw this figure
 
 The goal of this chapter is to explore bottlenecks induced by FLOPs oriented optimizations and show that taking into consideration limitations of current accelerators could help to develop guidelines for architecture design which do not compromise speed. We first explore the memory-bound problem theoretically, then prove out reasoning with experiments on current GPU accelerators, and finally come up with simple principles to avoid. 
@@ -28,7 +28,7 @@ This works focuses on optimizing and developing networks specially optimized for
 
 "It’s dot products all the way down" 
 
-Many of the computations inside neural networks are dot products like this: $y = w[0]*x[0] + w[1]*x[1] + \cdots \ldots w[n] * x[n]$ where $w$ and $x$ are two vectors and $y$ is a scalar. There are two main ways to calculate number of computations in such operation. First is to count $ w[0] * x[0] + \cdot $ as one multiply-accumulate or 1 **MACC**. The \textit{accumulation} operation here is addition. In the example above we have $n$ MACCs. 
+Many of the computations inside neural networks are dot products like this: $y = w[0]*x[0] + w[1]*x[1] + \cdots \ldots w[n] * x[n]$ where $w$ and $x$ are two vectors and $y$ is a scalar. There are two main ways to calculate number of computations in such operation. First is to count $ w[0] * x[0] + \cdot $ as one multiply-accumulate or 1 \textbf{MACC}. The \textit{accumulation} operation here is addition. In the example above we have $n$ MACCs. 
 
 
 NOTE: (need to make this footnote)
@@ -37,7 +37,7 @@ Technically speaking there are only n - 1 additions in the example above. Think 
 Second is to count number of direct floating point operations (**FLOPs**), in the example above there are $2n - 1$ FLOPs, since there are n multiplications and n additions. FLOPs should not be confused with floating point operations per second (FLOPS) used to measure hardware performance. Because matrix-multiplications is the core operation in neural networks, many modern accelerators have special multiply-and-accumulate units, called tensor cores 
 % \cite Volte: performance and programmability 
 in GPUs and matrix multiply units in TPUs % \cite two papers from comments above [30] [14] in Searching ....
-This means that 1 MACC could be perfomed usign 1 instruction, so in this work definition of FLOPs follows \cite{zhang2018shufflenet}, i.e. number of multiply-adds. Making FLOPs and MACC interchangeble.
+This means that 1 MACC could be perfomed usign 1 instruction, so in this work definition of FLOPs follows \cite{zhang2018_shufflenet}, i.e. number of multiply-adds. Making FLOPs and MACC interchangeble.
 
 Another important property of the network is dynamic random-access memory (**DRAM**) traffic for read and write of model parameters, activations and intermediate feature maps. Measuring exact number of DRAM read/write bytes could be complicated and requires special software. DRAM could be approximated by memory footprints of input and output tensors plus memory required for storing weights. This metric is called Convolutional Input/Output (CIO) \cite{chao2019_hardnet} and is proportional to to the real DRAM traffic measurement. For a typical convolution $K \times K$ kernel with $C$ channels, width $W$ and height $H$ CIO could be calculated using eq ??
 % TODO rewrite formula and add weighs term
@@ -58,13 +58,13 @@ We reasonably assume that model speed is either compute-bound or memory-(bandwid
 
 From that we can see why minimizing number of FLOPs don't always correlate with latency, such minization is only reasonable when we are compute-bounded in this layer. 
 
-Several papers has observed this lack of correlation and proposed several key principles for desingin high speed models specifically on GPUs \cite{design_spaces} \cite{lee2020_compounding_improvements}. Rather than providing them as is we will validate each claim with a set of experiments to observe the switch between compute-bound/memory-bound regions directly for different type of layers.
+Several papers has observed this lack of correlation and proposed several key principles for desingin high speed models specifically on GPUs \cite{radosavovic2020_designing} \cite{lee2020_compounding_improvements}. Rather than providing them as is we will validate each claim with a set of experiments to observe the switch between compute-bound/memory-bound regions directly for different type of layers.
 
 \subsection{Depthwise Separable Convolutions}
 
 Depth-wise convolutions (DW conv in short) have been proposed as an efficient alternative to traditional 2d convolutions. In the regular 2d convolution the filter is as deep as the input and lets us freely mix channels to generate each element in the output. In Depthwise convolutino each channel is kept separate. 
 
-Mixing channels is important for  neural networks, so the depthwise is more commonly used in combination with an additional step to mix the channels (pointwise convolution), such operation is called depthwise-separable convolution. See \ref{convs} for visual explanation of difference between conv and DepSep conv. 
+Mixing channels is important for  neural networks, so the depthwise is more commonly used in combination with an additional step to mix the channels (pointwise convolution), such operation is called depthwise-separable convolution. See \ref{fig: convs} for visual explanation of difference between conv and DepSep conv. 
 
 \begin{figure}[h]
     \centering
@@ -135,14 +135,14 @@ We can perform analysis of MoC simular to the previous chapter. We will compare 
 
 First conv has $ 1 \times 1 \times C_{in} \times C_{out} \approx 2k$ parameters. And $ 1 \times 1 \times C_{in} \times C_{out} \times H \times W \approx 0.1 $ GFLOPs
 
-Second conv has \approx 1M parameters and \approx 1 GFLOPs. 
+Second conv has $\approx$ 1M parameters and $\approx$ 1 GFLOPs. 
 
 % speed using half on V100, Pytorch 1.7.1, CUDA 10.1
 % stem convs ~= 27 microseconds / conv = 37000 convs / sec ~= 3.7 TFLOPS
 % deepre convs ~= 29 microseconds / conv = 34500 convs / sec ~= 34 TFLOPS
 %
 
-Empirical benchmarks show that first conv achieves \approx 3.7 TFLOP/sec, while conv1x1 in deeper layer (second conv) achieves \approx 34 TFLOP/sec. We can see a simular to DepSep conv pattern. Some conv1x1 give almost ten times lower accelerator utilization. Lets show that it again happens due to memory-bound.
+Empirical benchmarks show that first conv achieves $\approx$ 3.7 TFLOP/sec, while conv1x1 in deeper layer (second conv) achieves $\approx$ 34 TFLOP/sec. We can see a simular to DepSep conv pattern. Some conv1x1 give almost ten times lower accelerator utilization. Lets show that it again happens due to memory-bound.
 
 (тут анализ по памяти)
 

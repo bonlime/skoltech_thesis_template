@@ -2,45 +2,21 @@
 \small
 \tabcolsep=0.07cm
 \begin{tabular}{@{}ccccc@{}}
- & ResNet-50  &  Mixup~\cite{zhang2017mixup} & Cutout~\cite{devries2017cutout} & CutMix \\
-\multirow{4}{*}{Image} &  \multirow{4}{*}{\includegraphics[width=0.185\linewidth]{images/dog.png}}
- &  \multirow{4}{*}{\includegraphics[width=0.185\linewidth]{images/dog_mixup.png}}
- &  \multirow{4}{*}{\includegraphics[width=0.185\linewidth]{images/dog_mixup.png}}
- &  \multirow{4}{*}{\includegraphics[width=0.185\linewidth]{images/dog_cutmix.png.png}} \\ 
- & & & & \\ 
- & & & & \\
- & & & & \\ \midrule
+ & Original  &  Mixup \cite{zhang2017_mixup} & CutMix \cite{yun2019_cutmix}\\
+\multirow{4}{*}{Image} &  \multirow{4}{*}{\includegraphics[width=0.10\linewidth]{images/dog.png}}
+ &  \multirow{4}{*}{\includegraphics[width=0.10\linewidth]{images/dog_mixup.png}}
+ &  \multirow{4}{*}{\includegraphics[width=0.10\linewidth]{images/dog_cutmix.png}} \\ 
+ & & & \\ 
+ & & & \\
+ & & & \\ \midrule
  %
 \multirow{2}{*}{Label} 
 &\multirow{2}{*}{Dog 1.0}
 &\multirow{2}{*}{\begin{tabular}[c]{@{}c@{}}Dog 0.5\\ Cat 0.5\end{tabular}}
-&\multirow{2}{*}{Dog 1.0}
 &\multirow{2}{*}{\begin{tabular}[c]{@{}c@{}}Dog 0.6\\ Cat 0.4\end{tabular}} \\ 
-  & & & & \\  \midrule
-%
-\multirow{2}{*}{\begin{tabular}[c]{@{}c@{}}ImageNet\\ Cls (\%) \end{tabular}}
-& \multirow{2}{*}{\begin{tabular}[c]{@{}c@{}}76.3\\ (+0.0) \end{tabular}} 
-& \multirow{2}{*}{\begin{tabular}[c]{@{}c@{}}77.4\\ \greenp{+1.1} \end{tabular} } 
-& \multirow{2}{*}{\begin{tabular}[c]{@{}c@{}}77.1\\ \greenp{+0.8} \end{tabular}} 
-& \multirow{2}{*}{\begin{tabular}[c]{@{}c@{}}\textbf{78.6}\\ \textbf{\greenp{+2.3}} \end{tabular}} \\
-  & & & & \\  \midrule
-  %
-\multirow{2}{*}{\begin{tabular}[c]{@{}c@{}}ImageNet\\ Loc (\%) \end{tabular}}
-& \multirow{2}{*}{\begin{tabular}[c]{@{}c@{}}46.3\\ (+0.0) \end{tabular}} 
-& \multirow{2}{*}{\begin{tabular}[c]{@{}c@{}}45.8\\ \redp{-0.5} \end{tabular} } 
-& \multirow{2}{*}{\begin{tabular}[c]{@{}c@{}}46.7\\ \greenp{+0.4} \end{tabular}} 
-& \multirow{2}{*}{\begin{tabular}[c]{@{}c@{}}\textbf{47.3}\\ \textbf{\greenp{+1.0}} \end{tabular}} \\
-  & & & & \\ \midrule
-  %
-\multirow{2}{*}{\begin{tabular}[c]{@{}c@{}}Pascal VOC\\ Det (mAP) \end{tabular}}
-& \multirow{2}{*}{\begin{tabular}[c]{@{}c@{}}75.6\\ (+0.0) \end{tabular}} 
-& \multirow{2}{*}{\begin{tabular}[c]{@{}c@{}}73.9\\ \redp{-1.7} \end{tabular} } 
-& \multirow{2}{*}{\begin{tabular}[c]{@{}c@{}}75.1\\ \redp{-0.5} \end{tabular}} 
-& \multirow{2}{*}{\begin{tabular}[c]{@{}c@{}}\textbf{76.7}\\ \textbf{\greenp{+1.1}} \end{tabular}} \\
-  & & & & \\ \toprule
+  & & & \\  \toprule
+
 \end{tabular}
-\caption{Overview of the results of Mixup, Cutout, and our CutMix on ImageNet classification, ImageNet localization, and Pascal VOC 07 detection (transfer learning with SSD~\cite{liu2016ssd} finetuning) tasks.
-     Note that CutMix significantly improves the performance on various tasks.
-     }
+\caption{Example of Mixup/CutMix augmentations}
 \label{tab:cutmix}
 \end{table}
