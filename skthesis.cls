@@ -291,4 +291,5 @@ on \@thesisdate
 \def\abstractrus{\subsection*{\centering Реферат}\small\def\baselinestretch{1}\@normalsize}
 \def\endabstractrus{\par}
 
-\usepackage{kantlipsum}
+% needed to generate giberish in Kant-like style. was used in template, not needed in my thesis
+% \usepackage{kantlipsum}

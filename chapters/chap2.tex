@@ -1,4 +1,4 @@
-\chapter{Chapter2 (Speed)}
+\chapter{Speed} \label{sec: speed}
 
 
 % bottlenecks induced by FLOPs oriented optimizations - говорю о том, что определине "маленькая" сеть и "быстрая" сеть неоднозначны. можно смотреть на параметры, можно на FLOPS, можно на MAC, можно на real-life performance. ссылаюсь на работы которые показывают что связь между FLOPS | params | mac и скоростью нифига не линейная. можно вставить графики сравения по FLOPS похожие на те что в \cite{ma2018shufflenetv2}
@@ -28,11 +28,7 @@ This works focuses on optimizing and developing networks specially optimized for
 
 "It’s dot products all the way down" 
 
-Many of the computations inside neural networks are dot products like this: $y = w[0]*x[0] + w[1]*x[1] + \cdots \ldots w[n] * x[n]$ where $w$ and $x$ are two vectors and $y$ is a scalar. There are two main ways to calculate number of computations in such operation. First is to count $ w[0] * x[0] + \cdot $ as one multiply-accumulate or 1 \textbf{MACC}. The \textit{accumulation} operation here is addition. In the example above we have $n$ MACCs. 
-
-
-NOTE: (need to make this footnote)
-Technically speaking there are only n - 1 additions in the example above. Think of MACCs as being an approximation, similar to Big-O notation used in approximation of algorithm complexity.
+Many of the computations inside neural networks are dot products like this: $y = w[0]*x[0] + w[1]*x[1] + \cdots \ldots w[n] * x[n]$ where $w$ and $x$ are two vectors and $y$ is a scalar. There are two main ways to calculate number of computations in such operation. First is to count $ w[0] * x[0] + \cdot $ as one multiply-accumulate or 1 \textbf{MACC}. The \textit{accumulation} operation here is addition. In the example above we have $n$ MACCs. \footnote{Technically speaking there are only n - 1 additions in the example above. Think of MACCs as being an approximation, similar to Big-O notation used in approximation of algorithm complexity.}
 
 Second is to count number of direct floating point operations (**FLOPs**), in the example above there are $2n - 1$ FLOPs, since there are n multiplications and n additions. FLOPs should not be confused with floating point operations per second (FLOPS) used to measure hardware performance. Because matrix-multiplications is the core operation in neural networks, many modern accelerators have special multiply-and-accumulate units, called tensor cores 
 % \cite Volte: performance and programmability 

@@ -1,5 +1,5 @@
 
-\chapter{Chapter3 Performance}
+\chapter{Performance} \label{sec: performance}
 
 Models suitable for real-life deployment should be not only fast but also accurate. Definitonon of "accurate" differs in literature. In this paper we use top1 classification accuracy on imagenet as proxy for model performance on down-stream tasks, see \ref{subsec: imagenet} for detailed discussion. 
 The performance of a vision model is a product of the architecture, training methods and regularization. \cite{lee2020_compounding_improvements}. 
@@ -104,7 +104,7 @@ Default augmentations used in Imagenet training described in \ref{subsec: baseli
     \includegraphics[width=0.5\textwidth]{images/randaug_policy.png}
   \end{figure}
 
-Both of this policies use extensive amount of augmentations in the color domain combined with hard affine transformations like rotation and shear. Example of augmentations could be seen on \ref{fig: randaug}
+Both of this policies use extensive amount of augmentations in the color domain combined with hard affine transformations like rotation and shear. Example of augmentations could be seen on figure \ref{fig: randaug}
 From out experiments we found that RandAug slightly overperforms AutoAugment, so we use the former later in the text. The exact definition of RandAug augmentation strategy on Imagenet could be found in Appendix. 
 % TODO: add RandAug strategy to appendix.
 
@@ -112,12 +112,13 @@ From out experiments we found that RandAug slightly overperforms AutoAugment, so
 \subsection{MixUp and CutMix}
 
 % TODO: fix this table, remove cutout from it
-\input{tables/cutmix.tex}
 
 Mixup \cite{zhang2017_mixup} and CutMix \cite{yun2019_cutmix} are two recently proposed augmentation and regularization strategies. They both create new examples by interpolating two examples of the training set. Neural networks are known to memorize training data rather than generalize from the data \cite{zhang2016_understanding_deep}. As a result, the neural network produces unexpected outputs when it encounters data which are different from the distribution of the training set. Mixup/CutMix mitigates the problem by showing the neural network interpolated examples, and this helps to fill up the empty feature space of the training dataset.
 
+\input{tables/cutmix.tex}
+
 % below is copy-paste
-CutMix shares simularity with Mixup which mixes two samples by interpolating both the image and labels. While certainly improving classification performance, Mixup samples tend to be unnatural and locally ambiguous, and therefore confuses the model. CutMix overcomes the problem by replacing the image region with a patch from another training image, producing a more natural results as could be seen on \ref{tab: cutmix}
+CutMix shares simularity with Mixup which mixes two samples by interpolating both the image and labels. While certainly improving classification performance, Mixup samples tend to be unnatural and locally ambiguous, and therefore confuses the model. CutMix overcomes the problem by replacing the image region with a patch from another training image, producing a more natural results as could be seen on \ref{tab:cutmix}
 
 Mixup/CutMix has two types of implementation. The first type uses two mini batches to create a mixed mini batch. this type of implementation is suggested in the original paper \cite{zhang2017_mixup}. The second type uses a single mini batch to create the mixed mini batch by mixing the single mini batch with a shuffled clone of itself. The second type of implementation uses less CPU resources because only one mini batch needs to be preprocessed to create one mixed mini batch. However, experiments show that the second type of implementation reduces top-1 accuracy \cite{lee2020_compounding_improvements}. Therefore, in later experiments, we use the first type of implementation. We set the Mixup hyperparameter $\alpha$ to 0.2 and Cutmix alpha to 1. 
 
