@@ -18,7 +18,7 @@ This work carefully explores current CNN-related techniques for image classifica
 
 
 
-\section{Preliminaries}
+\section{Preliminaries} \label{sec: preliminaries}
 For better understanding we first describe default experimental setup for training ResNet50 model along with it's architecture and description of used dataset and metrics. 
 
 \paragraph{Dataset} \label{subsec: imagenet}
@@ -167,7 +167,7 @@ Stochastic depth \cite{huang2016_stochastic_depth} randomly drops each layer (wi
 
 \paragraph{Exponential moving average (EMA) of weights}
 
-EMA is very old. No real reference could be given
+Exponential moving average of model weights \cite{izmailov2018_averaging_swa_ema} is a technique that leads to a better generalization that conventional training. As was noticed in \cite{garipov2018_loss_surfaces} that flat optimiums lead to better generalization and indicate less overfitting, it could be achieved by simultaneously computing a second set of weights during training and using this weights for final validation. Given decay rate $\alpha$ and network parameters at each step $\theta_{1 \cdots T}$ the corresponding EMA weights are calculated as follows: $\theta_{t}^{EMA} = \alpha \theta_{t-1}^{EMA} + (1 - \alpha) \theta_{t} $. Typically $\alpha$ is set very close to zero, for example 0.999 \cite{tan2021_efficientnetv2} 
 
 \paragraph{Cosine Learning Rate Decay}
 
@@ -199,18 +199,25 @@ The comparison between step decay and cosine decay are illustrated in Figure \re
 
 \section{Architecture changes}
 
-Here we present minor adjustments to the model architecture, many of the tweaks presented have very light impact on computational complexity and latency, but often have noticeable effect on the model accuracy. All modifications in this section are applied on top of vanilla ResNet50 model. 
+Here we present minor adjustments to the model architecture, many of the tweaks presented have very light impact on computational complexity and latency, but often have noticeable effect on the model accuracy. All modifications in this section are applied on top of vanilla ResNet50 model described in \ref{sec: preliminaries}.
+
+\subsection{ResNet-B, C, D}
+Here we revisit three very common tweaks, which we call ResNet-B, ResNet-C and ResNet-D respectively. This tricks has been first combined in \cite{he2019_bag_of_tricks} and widely used after that \cite{ridnik2021_tresnet} \cite{bello2021_revisiting_resnet}. 
+
+\paragraph{ResNet-B}
+First tweak was first introduced in a Torch implementation of the original ResNet model and then was widely adopted by following works [7, 12, 27] (citations from Bag of Tricks). The observation is that convolution in path A on Figure \ref{fig: resnet-a} ignores $3/4$ of the input because it uses a kernel size $1 \times 1$ with a stride of 2. By moving the stride to $3 \times 3$ convolution we can make sure no information is ignored, as shown on Figure \ref{fig:resnet-b}
+
+% ResNet-B. This tweak first appeared in a Torch imple- mentation of ResNet [8] and then adopted by multiple works [7, 12, 27]. It changes the downsampling block of ResNet. The observation is that the convolution in path A ignores three-quarters of the input feature map because it uses a kernel size 1×1 with a stride of 2. ResNet-B switches the strides size of the first two convolutions in path A, as shown in Figure 2a, so no information is ignored. Because the second convolution has a kernel size 3 × 3, the output shape of path A remains unchanged.
+
+
+\paragraph{ResNet-C}
+Second observation is that the computational cost of a convolution is quadratic in respect to the kernel size. First $7 \times 7$ convolution in the network is $5.4$ times more expensive than a $3 \times 3 $ convolution. So replacing it with three $3 \times 3 $ convolutions gives the same receptive field, but requires less computation see Figure \ref{fig:resnet-c}. On practice the overhead for performing 3 separate convolutions makes this variant slightly slower but consistently improves performance \cite{he2019_bag_of_tricks}. 
+
+
+% This tweak was proposed in Inception-v2 [26] originally, and it can be found on the implementations of other models, such as SENet [12], PSPNet [31], DeepLabV3 [1], and ShuffleNetV2 [21]. The observation is that the computational cost of a convolution is quadratic to the kernel width or height. A 7 × 7 convolution is 5.4 times more expensive than a 3 × 3 convolution. So this tweak replacing the 7 × 7 convolution in the input stem with three conservative 3 × 3 convolutions, which is shown in Figure 2b, with the first and second convolutions have their output channel of 32 and a stride of 2, while the last convolution uses a 64 output channel.
 
 \paragraph{ResNet-D}
-
-Here we revisit three very common tweak, first proposed in \cite{he2019_bag_of_tricks} and widely used after that \cite{ridnik2021_tresnet} \cite{bello2021_revisiting_resnet}. First tweak was first introduced in a Torch implementation of the original ResNet model and then was widely adopted by following works [7, 12, 27] (from Bag of Tricks). The observation is that convolution in path A on Figure \ref{fig: resnet-a} ignores $3/4$ of the input because it uses a kernel size 1 \times 1 with a stride of 2. 
-
-
-
-ResNet-B. This tweak first appeared in a Torch imple- mentation of ResNet [8] and then adopted by multiple works [7, 12, 27]. It changes the downsampling block of ResNet. The observation is that the convolution in path A ignores three-quarters of the input feature map because it uses a kernel size 1×1 with a stride of 2. ResNet-B switches the strides size of the first two convolutions in path A, as shown in Figure 2a, so no information is ignored. Because the second convolution has a kernel size 3 × 3, the output shape of path A remains unchanged.
-ResNet-C. This tweak was proposed in Inception-v2 [26] originally, and it can be found on the implementations of other models, such as SENet [12], PSPNet [31], DeepLabV3 [1], and ShuffleNetV2 [21]. The observation is that the computational cost of a convolution is quadratic to the kernel width or height. A 7 × 7 convolution is 5.4 times more expensive than a 3 × 3 convolution. So this tweak replacing the 7 × 7 convolution in the input stem with three conservative 3 × 3 convolutions, which is shown in Figure 2b, with the first and second convolutions have their output channel of 32 and a stride of 2, while the last convolution uses a 64 output channel.
-ResNet-D. Inspired by ResNet-B, we note that the 1 × 1 convolution in the path B of the downsampling block also ignores 3/4 of input feature maps, we would like to modify it so no information will be ignored. Empirically, we found adding a 2×2 average pooling layer with a stride of 2 before the convolution, whose stride is changed to 1, works well in practice and impacts the computational cost little. This tweak is illustrated in Figure 2c.
-
+Third observation is similar to ResNet-B. In the path B of the downsampling block the $1 \times 1$ convolution also ignores $3/4$ of the input. Adding a $2 \times 2$ average pooling layer before the convolution makes sure nothing is ignored, having a neglitable impact on model latency. This tweak is illustrated on Figure \ref{fig:resnet-d}.
 
 \begin{figure}[t!]
   \centering
@@ -225,6 +232,34 @@ ResNet-D. Inspired by ResNet-B, we note that the 1 × 1 convolution in the path 
   }
   \caption{Three ResNet tweaks. (a) modifies the downsampling block of Resnet. (b) modifies the input stem. (c) again modifies the downsampling block.}
   \label{fig:resnet-tweaks}
+\end{figure}
+
+
+\subsection{Anti-Alias Downsampling (AA)}
+% below is copy-paste from Compounding ...
+Convolutional networks are vulnerable to small amounts of distortion \cite{xie2020_adversarial}, as small input shifts or translations can cause noticeable change in the output. This contradicts the shift-invariant nature of convolution operation. Such shift-variance is introduced due to commonly used downsampling methods, such as max-pooling and strided convolution. The \cite{zhang2019_making_aa_shift_invariant} proposes Anti-Aliasing downsampling modules as a low-pass filter to improve the shift-equivariance of deep networks. The usual max-pool operation could be viewed as first densely evaluating max operator, followed by naive sub-sampling. By introducing additional blurring operation before sub-sampling we could achieve better anti-aliasing. In the original paper authors propose to AA all downsampling operations present in the model, but on practice \cite{lee2020_compounding_improvements} adding AA with kernel size 3 only after $3 \times 3 $ convolution is enough and gives the best tradeoff between performance improvement and decrease in latency. Based on this results, in the following experiments we apply AA only to strided-convs in the model. 
+
+
+
+
+
+\subsection{Channel Attention}
+Incorporating channel attention mechanism \cite{hu2018_squeeze_SE} \cite{wang2020_eca} into convolutional blocks has shown a great potential in improving the performance of deep convolutional neural networks. % cite  [14, 33, 13, 4, 9, 18, 7]. from ECA paper
+Following \cite{hu2018_squeeze_SE} many variants of attention has been proposed, however most existing methods focus on developing sophisticated attention modules, not taking into account model complexity and inference speed. Here we review two most popular methods which don't affect speed too much. See Figure \ref{fig: se-eca} for visualization of proposed methods.
+
+\paragraph{Squeeze-Excitation}
+Squeeze and Excitation (SE) network tries to enhance the representational capacity of the network by modeling cross-channel interactions. First, SE eliminates spatial information by global average pooling (GAP) to get a total channel information, after that two fully connected layers learn the channel-wise relationships. In order to avoid introducing too many parameters, a dimensionality reduction is performed, by decreasing and increasing number of channels between two linear layers. 
+
+\paragraph{Efficient Channel Attention} This variant of attention tries to fix the existing flows of Squeeze-Excitation module and by avoiding dimensionality reduction and capturing cross-channel interaction in an efficient way. It brings a better performance that SE, while only introduction a handful of parameters. This module could be efficiently implemented using $1 D $ convolutions. 
+
+
+% TODO: redraw this figure. remove Adaptive selection of kernel 
+% Figure 2. Diagram of our efficient channel attention (ECA) mod- ule. Given the aggregated features obtained by global average pooling (GAP), ECA generates channel weights by performing a fast 1D convolution of size k, where k is adaptively determined via a mapping of channel dimension C.
+\begin{figure}[h!]
+  \caption{SE vs ECA comparsion. TODO. rewrite caption.}
+  % One of the successful policies on ImageNet. As described in the text, most of the policies found on ImageNet used color-based transformations.}
+  \label{fig: se-eca}
+  \includegraphics[width=1\textwidth]{images/eca_module.jpg}
 \end{figure}
 
 
