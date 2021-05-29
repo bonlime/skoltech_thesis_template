@@ -66,6 +66,10 @@ class SpaceToDepth(torch.nn.Module):
 
 conv7x7 = torch.nn.Conv2d(3, 32, 7, 2, 3, bias=False).cuda()
 conv7x7_2 = torch.nn.Conv2d(32, 32, 7, 2, 3, bias=False).cuda()
+conv7x7_maxpool = torch.nn.Sequential( # output is 12 to match s2d
+    torch.nn.Conv2d(3, 12, 7, 2, 3, bias=False),
+    torch.nn.MaxPool2d(2, 2),
+).cuda()
 
 conv2x2 = torch.nn.Conv2d(3, 32, 2, 2, 0, bias=False).cuda()
 conv2x2_2 = torch.nn.Conv2d(32, 32, 2, 2, 0, bias=False).cuda()
@@ -93,6 +97,10 @@ space2depth_jit_2 = torch.nn.Sequential(
     torch.nn.Conv2d(32 * 4, 32, 3, 1, 1, bias=False).cuda()
 )
 
+space2depth4x4 = SpaceToDepth(4)
+space2depth2x2 = SpaceToDepth()
+
+
 if hparams.half:
     pp = [
 #         inp1,
@@ -110,6 +118,7 @@ if hparams.half:
     inp2 = inp2.half()
     conv7x7 = conv7x7.half()
     conv7x7_2 = conv7x7_2.half()
+    conv7x7_maxpool = conv7x7_maxpool.half()
     conv2x2 = conv2x2.half()
     conv2x2_2 = conv2x2_2.half()
     conv3x3 = conv3x3.half()
@@ -120,67 +129,104 @@ if hparams.half:
 
 
     
-outs = [conv7x7(inp1).shape, conv2x2(inp1).shape, space2depth(inp1).shape, space2depth_jit(inp1).shape]
-assert outs[0] == outs[1] and outs[0] == outs[2] and outs[0] == outs[3]
+o = [conv7x7(inp1).shape, conv2x2(inp1).shape, conv3x3(inp1).shape, space2depth(inp1).shape, space2depth_jit(inp1).shape]
+assert o[0] == o[1] and o[0] == o[2] and o[0] == o[3] and o[0] == o[4] # and o[0] == o[5] and o[0] == o[4]
 label1 = f"RGB stem. Shape: {inp1.shape}"
-t0 = benchmark.Timer(
-    stmt='conv(inp)',
-    globals={'inp': inp1, 'conv': conv7x7},
-    num_threads=num_threads,
-    label=label1,
-    sub_label="conv7x7",
-    description='description',
-).blocked_autorange(min_run_time=1)
+all_res = []
+all_res.append(
+    benchmark.Timer(
+        stmt='conv(inp)',
+        globals={'inp': inp1, 'conv': conv7x7},
+        num_threads=num_threads,
+        label=label1,
+        sub_label="conv7x7",
+        description='description',
+    ).blocked_autorange(min_run_time=1)
+)
 
-t1 = benchmark.Timer(
-    stmt='conv(inp)',
-    globals={'inp': inp1, 'conv': conv2x2},
-    num_threads=num_threads,
-    label=label1,
-    sub_label="conv2x2",
-    description='description',
-).blocked_autorange(min_run_time=1)
+all_res.append(
+    benchmark.Timer(
+        stmt='conv(inp)',
+        globals={'inp': inp1, 'conv': conv2x2},
+        num_threads=num_threads,
+        label=label1,
+        sub_label="conv2x2",
+        description='description',
+    ).blocked_autorange(min_run_time=1)
+)
 
+all_res.append(
+    benchmark.Timer(
+        stmt='conv(inp)',
+        globals={'inp': inp1, 'conv': conv3x3},
+        num_threads=num_threads,
+        label=label1,
+        sub_label="conv3x3",
+        description='description',
+    ).blocked_autorange(min_run_time=1)
+)
 
-t2 = benchmark.Timer(
-    stmt='conv(inp)',
-    globals={'inp': inp1, 'conv': space2depth},
-    num_threads=num_threads,
-    label=label1,
-    sub_label="space2depth",
-    description='description',
-).blocked_autorange(min_run_time=1)
+all_res.append(
+    benchmark.Timer(
+        stmt='conv(inp)',
+        globals={'inp': inp1, 'conv': space2depth},
+        num_threads=num_threads,
+        label=label1,
+        sub_label="space2depth",
+        description='description',
+    ).blocked_autorange(min_run_time=1)
+)
 
-t3 = benchmark.Timer(
-    stmt='conv(inp)',
-    globals={'inp': inp1, 'conv': space2depth_jit},
-    num_threads=num_threads,
-    label=label1,
-    sub_label="space2depth_jit",
-    description='description',
-).blocked_autorange(min_run_time=1)
+all_res.append(
+    benchmark.Timer(
+        stmt='conv(inp)',
+        globals={'inp': inp1, 'conv': space2depth_jit},
+        num_threads=num_threads,
+        label=label1,
+        sub_label="space2depth_jit",
+        description='description',
+    ).blocked_autorange(min_run_time=1)
+)
 
-t4 = benchmark.Timer(
-    stmt='conv(inp)',
-    globals={'inp': inp1, 'conv': conv3x3},
-    num_threads=num_threads,
-    label=label1,
-    sub_label="conv3x3",
-    description='description',
-).blocked_autorange(min_run_time=1)
+all_res.append( # default R50 stem
+    benchmark.Timer(
+        stmt='conv(inp)',
+        globals={'inp': inp1, 'conv': conv7x7_maxpool},
+        num_threads=num_threads,
+        label=label1,
+        sub_label="conv7x7 maxpool (OS=4)",
+        description='description',
+    ).blocked_autorange(min_run_time=1)
+)
+
+all_res.append( # default TResNet50 stem
+    benchmark.Timer(
+        stmt='conv(inp)',
+        globals={'inp': inp1, 'conv': space2depth4x4},
+        num_threads=num_threads,
+        label=label1,
+        sub_label="space2depth 4x4",
+        description='description',
+    ).blocked_autorange(min_run_time=1)
+)
+
+all_res.append(
+    benchmark.Timer(
+        stmt='conv(inp)',
+        globals={'inp': inp1, 'conv': space2depth2x2},
+        num_threads=num_threads,
+        label=label1,
+        sub_label="space2depth 2x2",
+        description='description',
+    ).blocked_autorange(min_run_time=1)
+)
 
 label2 = f"Deeper stem. Shape: {inp2.shape}"
 
 
 
 ## divide speed by batch size
-t0 = adjust_for_bs(t0)
-t1 = adjust_for_bs(t1)
-t2 = adjust_for_bs(t2)
-t3 = adjust_for_bs(t3)
-t4 = adjust_for_bs(t4)
+all_res = [adjust_for_bs(i) for i in all_res]
 
-
-
-compare = benchmark.Compare([t0, t1, t4, t2, t3])
+compare = benchmark.Compare(all_res)
 compare.print()

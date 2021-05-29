@@ -46,6 +46,8 @@ gap = FastGlobalAvgPool2d().cuda()
 se = SEModule(32, 16).cuda()
 se2 = SEModule(256, 64).cuda()
 eca = ECAModule().cuda()
+eca9 = ECAModule(kernel_size=9).cuda()
+
 
 if hparams.half:
     inp1 = inp1.half()
@@ -54,6 +56,7 @@ if hparams.half:
     se = se.half()
     se2 = se2.half()
     eca = eca.half()
+    eca9 = eca9.half()
 
 all_res = []
 
@@ -74,7 +77,7 @@ all_res.append(
         globals={'inp': inp1, 'conv': se},
         num_threads=num_threads,
         label=label1,
-        sub_label="SE(0.5)",
+        sub_label=f"SE(0.5). {get_params_str(se)}",
         description='description',
     ).blocked_autorange(min_run_time=1)
 )
@@ -85,6 +88,16 @@ all_res.append(
         num_threads=num_threads,
         label=label1,
         sub_label="ECA",
+        description='description',
+    ).blocked_autorange(min_run_time=1)
+)
+all_res.append(
+    benchmark.Timer(
+        stmt='conv(inp)',
+        globals={'inp': inp1, 'conv': eca9},
+        num_threads=num_threads,
+        label=label1,
+        sub_label="ECA9",
         description='description',
     ).blocked_autorange(min_run_time=1)
 )
@@ -106,7 +119,7 @@ all_res.append(
         globals={'inp': inp2, 'conv': se2},
         num_threads=num_threads,
         label=label2,
-        sub_label="SE(0.5)",
+        sub_label=f"SE(0.5). {get_params_str(se2)}",
         description='description',
     ).blocked_autorange(min_run_time=1)
 )
@@ -120,7 +133,16 @@ all_res.append(
         description='description',
     ).blocked_autorange(min_run_time=1)
 )
-
+all_res.append(
+    benchmark.Timer(
+        stmt='conv(inp)',
+        globals={'inp': inp2, 'conv': eca9},
+        num_threads=num_threads,
+        label=label2,
+        sub_label="ECA9",
+        description='description',
+    ).blocked_autorange(min_run_time=1)
+)
 
 ## divide speed by batch size
 all_res = [adjust_for_bs(i) for i in all_res]
