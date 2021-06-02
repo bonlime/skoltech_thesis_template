@@ -1,4 +1,5 @@
 \documentclass[a4paper, 12pt]{skthesis}
+% TODO: change font to 14pt using extsizes package
 \usepackage{lgrind}
 \usepackage{cmap}
 %% used by cutmix table
@@ -9,6 +10,13 @@
 % sub-numbering for images and tables
 % \usepackage{subfloat}
 \usepackage{subfig}
+
+% Beautiful links
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+}
 
 %\usepackage[T2A]{fontenc}
 % to allow fixed width in tables, like `m{2cm}`'

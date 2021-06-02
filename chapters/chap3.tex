@@ -2,7 +2,7 @@
 \chapter{Performance} \label{sec: performance}
 %% TODO: maybe think about renaming this chapter into something else, because we here not only talk about performance but also introduce all training/architecture modifications
 
-Models suitable for real-life deployment should be not only fast but also accurate. Definition of "accurate" differs in literature. In this paper we use top-1 classification accuracy on imagenet as proxy for model performance on down-stream tasks, see \ref{subsec: imagenet} for detailed discussion. 
+Models suitable for real-life deployment should be not only fast but also accurate. Definition of "accurate" differs in literature. In this paper we use top-1 classification accuracy on imagenet as proxy for model performance on down-stream tasks, see Section \ref{subsec: imagenet} for detailed discussion. 
 The performance of a vision model is a product of the architecture, training methods and regularization. \cite{lee2020_compounding_improvements}. 
 Since the introduction of AlexNet \cite{krizhevsky2012_imagenet_alexnet}, many studies emphasizes was on modifying model architectures through new blocks (cite Inception), new architectural choices (cite ResNet ), new rules for scaling models \cite{tan2019_efficientnet} or novel types of regularization. \cite{zhang2017_mixup} \cite{yun2019_cutmix}
 % тут можно ещё подробнее написать кто что предлагает
@@ -70,7 +70,7 @@ This section briefly presents the ResNet architecture, especially its modules. F
 
 
 % below is again a large copy-paste
-A ResNet network consists of an input stem, four subsequent stages and a final output layer, which is illustrated in \ref{fig: resnet-a}. The input stem has a $7 \times 7$ convolution with an output channel of 64 and a stride of 2, followed by a $3 \times 3$ max pooling layer also with a stride of 2. The input stem reduces the input width and height by 4 times and increases its channel size to 64. 
+A ResNet network consists of an input stem, four subsequent stages and a final output layer, which is illustrated in Figure \ref{fig: resnet-a}. The input stem has a $7 \times 7$ convolution with an output channel of 64 and a stride of 2, followed by a $3 \times 3$ max pooling layer also with a stride of 2. The input stem reduces the input width and height by 4 times and increases its channel size to 64. 
 Starting from stage 2, each stage begins with a downsampling block, which is then followed by several residual blocks. In the downsampling block, there are path A and path B. Path A has three convolutions, whose kernel sizes are $1 \times 1$, $3 \times 3$ and $1 \times 1$, respectively. The first convolution has a stride of 2 to halve the input width and height, and the last convolution’s output channel is 4 times larger than the previous two, which is called the bottleneck structure. Path B uses a 1×1 convolution with a stride of 2 to transform the input shape to be the output shape of path A, so we can sum outputs of both paths to obtain the output of the downsampling block. A residual block is similar to a downsampling block except for only using convolutions with a stride of 1.
 One can vary the number of residual blocks in each stage to obtain different ResNet models, such as ResNet-50 and ResNet-152, where the number presents the number of convolutional layers in the network.
 
@@ -121,7 +121,7 @@ The weight decay is a popular technique used to prevent overfitting. It's usuall
 Here we present regularization and data augmentation strategies routinely used in state-of-the art classification models \cite{lin2020neural_genet} \cite{tan2019_efficientnet} \cite{tan2021_efficientnetv2}
 
 \paragraph{Data Augmentation}
-Default augmentations used in Imagenet training described in \ref{subsec: baseline_training} are quite weak to match up the capacity of modern CNNs. Many better augmentations strategies has been proposed to bring diversity during training. Two most popular being: 
+Default augmentations used in Imagenet training described in Section \ref{subsec: baseline_training} are quite weak to match up the capacity of modern CNNs. Many better augmentations strategies has been proposed to bring diversity during training. Two most popular being: 
 
 \begin{itemize}
     \item AutoAugment \cite{cubuk2018_autoaugment} which learns augmentation strategies from data. It uses reinforcement learning to select a sequence of image augmentation operations with the best accuracy by searching a discrete search space of their probability of application and magnitude.
@@ -134,7 +134,7 @@ Default augmentations used in Imagenet training described in \ref{subsec: baseli
     \includegraphics[width=0.5\textwidth]{images/randaug_policy.png}
   \end{figure}
 
-Both of this policies use extensive amount of augmentations in the color domain combined with hard affine transformations like rotation and shear. Example of augmentations could be seen on figure \ref{fig: randaug}
+Both of this policies use extensive amount of augmentations in the color domain combined with hard affine transformations like rotation and shear. Example of augmentations could be seen on Figure \ref{fig: randaug}
 From out experiments we found that RandAug slightly outperforms AutoAugment, so we use the former later in the text. The exact definition of RandAug augmentation strategy on Imagenet could be found in Appendix. 
 % TODO: add RandAug strategy to appendix.
 
@@ -148,7 +148,7 @@ Mixup \cite{zhang2017_mixup} and CutMix \cite{yun2019_cutmix} are two recently p
 \input{tables/cutmix.tex}
 
 % below is copy-paste
-CutMix shares similarity with Mixup which mixes two samples by interpolating both the image and labels. While certainly improving classification performance, Mixup samples tend to be unnatural and locally ambiguous, and therefore confuses the model. CutMix overcomes the problem by replacing the image region with a patch from another training image, producing a more natural results as could be seen on \ref{tab:cutmix}
+CutMix shares similarity with Mixup which mixes two samples by interpolating both the image and labels. While certainly improving classification performance, Mixup samples tend to be unnatural and locally ambiguous, and therefore confuses the model. CutMix overcomes the problem by replacing the image region with a patch from another training image, producing a more natural results as could be seen in Figure \ref{tab:cutmix}
 
 Mixup/CutMix has two types of implementation. The first type uses two mini batches to create a mixed mini batch. this type of implementation is suggested in the original paper \cite{zhang2017_mixup}. The second type uses a single mini batch to create the mixed mini batch by mixing the single mini batch with a shuffled clone of itself. The second type of implementation uses less CPU resources because only one mini batch needs to be preprocessed to create one mixed mini batch. However, experiments show that the second type of implementation reduces top-1 accuracy \cite{lee2020_compounding_improvements}. Therefore, in later experiments, we use the first type of implementation. We set the Mixup hyperparameter $\alpha$ to 0.2 and Cutmix alpha to 1. 
 
@@ -199,7 +199,7 @@ The comparison between step decay and cosine decay are illustrated in Figure \re
 
 \section{Architecture changes}
 
-Here we present minor adjustments to the model architecture, many of the tweaks presented have very light impact on computational complexity and latency, but often have noticeable effect on the model accuracy. All modifications in this section are applied on top of vanilla ResNet50 model described in \ref{sec: preliminaries}.
+Here we present minor adjustments to the model architecture, many of the tweaks presented have very light impact on computational complexity and latency, but often have noticeable effect on the model accuracy. All modifications in this section are applied on top of vanilla ResNet50 model described in Section \ref{sec: preliminaries}.
 
 \subsection{ResNet-B, C, D}
 Here we revisit three very common tweaks, which we call ResNet-B, ResNet-C and ResNet-D respectively. This tricks has been first combined in \cite{he2019_bag_of_tricks} and widely used after that \cite{ridnik2021_tresnet} \cite{bello2021_revisiting_resnet}. 
