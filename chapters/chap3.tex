@@ -6,7 +6,7 @@ Models suitable for real-life deployment should be not only fast but also accura
 The performance of a vision model is a product of the architecture, training methods and regularization. \cite{lee2020_compounding_improvements}. 
 Since the introduction of AlexNet \cite{krizhevsky2012_imagenet_alexnet}, many studies emphasizes was on modifying model architectures through new blocks (cite Inception), new architectural choices (cite ResNet ), new rules for scaling models \cite{tan2019_efficientnet} or novel types of regularization. \cite{zhang2017_mixup} \cite{yun2019_cutmix}
 % тут можно ещё подробнее написать кто что предлагает
-In contrast to these studies focusing on designing new network architecture, works like \cite{he2019bag_of_tricks} follow different approach to improve model performance. They noted that performance can be improved not only through changes in the model structure, but also through other aspects of network training such as data preprocessing, augmentations, regularization techniques and parameter initialization (cite NFNet). They also demonstrate that these minor “tricks” play a major part in boosting model performance when applied in combination. This improvements are highly significant because it could bring as much performance improvement as a novel network design does. For example \cite{he2019bag_of_tricks} shows that top-1 validation accuracy of vanilla ResNet-50 could be improved from 75.3\% to 79.2\% with changes in training procedure alone. 
+In contrast to these studies focusing on designing new network architecture, works like \cite{he2019_bag_of_tricks} follow different approach to improve model performance. They noted that performance can be improved not only through changes in the model structure, but also through other aspects of network training such as data preprocessing, augmentations, regularization techniques and parameter initialization (cite NFNet). They also demonstrate that these minor “tricks” play a major part in boosting model performance when applied in combination. This improvements are highly significant because it could bring as much performance improvement as a novel network design does. For example \cite{he2019_bag_of_tricks} shows that top-1 validation accuracy of vanilla ResNet-50 could be improved from 75.3\% to 79.2\% with changes in training procedure alone. 
 
 % As a result of using these tricks, ILSVRC2012 top-1 validation ac- curacy of ResNet-50 improved from 75.3\% to 79.29\% and MobileNet improved from 69.03\% to 71.90\%. This improvement is highly significant because it shows as much performance improvement as a novel network design does. 
 
@@ -243,14 +243,24 @@ Convolutional networks are vulnerable to small amounts of distortion \cite{xie20
 
 
 
-\subsection{Channel Attention}
+\subsection{Channel Attention} \label{sec:channel-attn}
 Incorporating channel attention mechanism \cite{hu2018_squeeze_SE} \cite{wang2020_eca} into convolutional blocks has shown a great potential in improving the performance of deep convolutional neural networks. % cite  [14, 33, 13, 4, 9, 18, 7]. from ECA paper
 Following \cite{hu2018_squeeze_SE} many variants of attention has been proposed, however most existing methods focus on developing sophisticated attention modules, not taking into account model complexity and inference speed. Here we review two most popular methods which don't affect speed too much. See Figure \ref{fig: se-eca} for visualization of proposed methods.
 
 \paragraph{Squeeze-Excitation}
 Squeeze and Excitation (SE) network tries to enhance the representational capacity of the network by modeling cross-channel interactions. First, SE eliminates spatial information by global average pooling (GAP) to get a total channel information, after that two fully connected layers learn the channel-wise relationships. In order to avoid introducing too many parameters, a dimensionality reduction is performed, by decreasing and increasing number of channels between two linear layers. 
+% TODO add formulas 
+% nels. In short, given input feature map $\mathrm{X}_{i} \in \mathbb{R}^{C \times W \times H}$, the channel attention map $\mathrm{A}_{\mathrm{ch}}\left(\mathrm{X}_{\mathrm{i}}\right) \in \mathbb{R}^{C \times 1 \times 1}$ is computed as:
+% $$
+% \mathrm{A}_{c h}\left(\mathrm{X}_{i}\right)=\sigma\left(\mathrm{W}_{C}\left(\delta\left(\mathrm{W}_{C / r}\left(\mathcal{F}_{g a p}\left(\mathrm{X}_{i}\right)\right)\right)\right)\right.
+% $$
+% where $\mathcal{F}_{g a p}(\mathrm{X})=\frac{1}{W H} \sum_{i, j=1}^{W, H} \mathrm{X}_{i, j}$ is channel-wise global
+% average pooling, $\mathrm{W}_{C / r}, \mathrm{~W}_{C} \in \mathbb{R}^{C \times 1 \times 1}$ are weights of two fully-connected layers, $\delta$ denotes ReLU non-linear operator and $\sigma$ indicates sigmoid function.
+
 
 \paragraph{Efficient Channel Attention} This variant of attention tries to fix the existing flows of Squeeze-Excitation module and by avoiding dimensionality reduction and capturing cross-channel interaction in an efficient way. It brings a better performance that SE, while only introduction a handful of parameters. This module could be efficiently implemented using $1 D $ convolutions. 
+
+Another design choice is the location of channel attention inside model block. It could be applied either after second $3 \times 3$ (spatial) convolution or after last $1 \times 1 $ (pointwise) convolution. Both options are used in the literature \cite{tan2019_efficientnet} \cite{tan2021_efficientnetv2} \cite{lin2020neural_genet}. We follow EfficientNet v2 \cite{tan2021_efficientnetv2} and apply attention after spatial convolution because in our ablation study it performs slightly better.  See Section \ref{sec:ablation} for details. % TODO: create an ablation table which validates this claim
 
 
 % TODO: redraw this figure. remove Adaptive selection of kernel 
@@ -261,6 +271,50 @@ Squeeze and Excitation (SE) network tries to enhance the representational capaci
   \label{fig: se-eca}
   \includegraphics[width=1\textwidth]{images/eca_module.jpg}
 \end{figure}
+
+
+\subsection{Pre-Activation}
+Pre-activation changes the order of activation and convolution inside default ResNet block, it makes training easier and improves generalization. It was introduced by authors of original ResNet50 model \cite{he2016deep_resnetv1} in their following paper \cite{he2016identity_resnetv2} but didn't become popular, despite noticeably better performance. 
+The idea of pre-activation arose from attempts to train a very deep ResNets. The convergence speed and final performance of such models is degraded significantly with increasing depth which is contr-intuitive. A deeper net should be not worse than shallower net because it could be viewed as a shallow net with identity blocks stacked on top of it. But in reality the identity breaks because of activations in the main path of information. To recap an original ResNet block is shown on Figure \ref{fig: pre-act}. Given input of residual unit $x_l$ the output $x_{l+1}$ could be expressed in the following form: 
+$$ x_{l+1} = ReLU \left( x_l + \mathcal{F} (x_l, W_l) \right)$$ \label{eq: res-block}
+
+Where $\mathcal{F}$ calculates output of residual block which consists of Conv $\rightarrow$ BN $\rightarrow$ ReLU $\rightarrow$ Conv $\rightarrow$ BN. Where ReLU activation after addition has two undesired properties. First it breaks the propagation of identity signal which has been shown to be a crucial ingredient of success for residual networks \cite{chao2019_hardnet}. Secondly it limits all features in main path to positive values which introduces undesired constrains and limits model capacity. By rearranging blocks from $Conv \rightarrow BN \rightarrow Activation$ to $BN \rightarrow Activation \rightarrow Conv$ we can remove this properties while maintaining the same number of activations and convolution layers. Later in the paper we refer to such networks using pre-activation blocks as Pre-Activation ResNets.
+
+
+% TODO: ideally - redraw this figure. or at least embed in correctly. 
+% TODO: add plot for Linear Bottleneck which is the same as original block but without last ReLU
+\begin{figure}[h!]
+  \caption{ (a) original Residual Unit in [1]; (b) proposed Residual Unit}
+  % The grey arrows indicate the easiest paths for the information to propagate, corresponding to the additive term “xl” in Eqn.(4) (forward propagation) and the additive term “1” in Eqn.(5) (backward propagation).
+  \label{fig: pre-act}
+  \includegraphics[clip, trim=0cm 0cm 13.5cm 0cm, scale=.55]{images/preact1.pdf}
+\end{figure}
+
+\subsection{Linear Bottleneck}
+"Linear Bottleneck" \cite{sandler2018_mobilenetv2} tries to improve information propagation inside ResNet by removing the last ReLU activation from default block. The motivation for this is similar to Pre-Activation blocks - to prevent non-linearities from destroying too much information in the main path. We perform and ablation study between Pre-Activation and Linear Blocks later in Section \ref{sec:ablation}
+
+
+% (когда буду говорить про SE vs ECA сделать ремарку о том, что авторы второго не правы, когда мерят ФЛОПс и говорят что у них меньше. может быть добавить эксперименты со скоростью если делать просто GAP без каких либо операций и показать что он занимает бОльшую часть от замедления (сколько это кстати? 60? 70?))
+% upd. как оказалось, для большой картинки GAP занимает ~33% всего времени, для тензора в середине 25%, что составляет меньшую часть в любом случае. разница в скорости между ними определенно есть.  
+% [ Middle stem. Shape: torch.Size([64, 32, 224, 224]) ]
+%                      |  description
+% 16 threads: -----------------------
+%       GAP            |       7.7
+%       SE(0.5). 1.1k  |      23.9
+%       ECA            |      23.2
+%       ECA9           |      23.2
+
+% Times are in microseconds (us).
+
+% [ Deeper stem. Shape: torch.Size([64, 256, 14, 14]) ]
+%                       |  description
+% 16 threads: ------------------------
+%       GAP             |      352.0
+%       SE(0.5). 33.1k  |     2491.0
+%       ECA             |     1480.1
+%       ECA9            |     1563.4
+
+% Times are in nanoseconds (ns).
 
 
 
@@ -289,23 +343,21 @@ Squeeze and Excitation (SE) network tries to enhance the representational capaci
 
 % at- tempts to combine existing techniques to create a practical model are still uncommon
 
-(нужно еще где-то сказать что со временем растет уровень того что такое бейзлайн. если в 2016м году резнет50 был 75.6, то сейчас если он ниже 79, то сравнение нечестное. самое честное что можно (и нужно делать) это использовать одинаковые трюки как во время обучения своей новой супер-пупер мега модели так и во время обучения старого-доброго резнета)
+% (нужно еще где-то сказать что со временем растет уровень того что такое бейзлайн. если в 2016м году резнет50 был 75.6, то сейчас если он ниже 79, то сравнение нечестное. самое честное что можно (и нужно делать) это использовать одинаковые трюки как во время обучения своей новой супер-пупер мега модели так и во время обучения старого-доброго резнета)
 
 
 
-\subsection{How to do better}
+% \subsection{How to do better}
 
 
 
-(когда буду говорить про пайплайн, нужно вставить что дефолтные аугментации очень слабые и хотя это uncommon to report training accuracy for the model, one can observe a very strong overfitting using the default augmentation. it means that almost any additional regularization would have a noticeable effect, but it also means that что они бьют лежачего в общем    )
+% (когда буду говорить про пайплайн, нужно вставить что дефолтные аугментации очень слабые и хотя это uncommon to report training accuracy for the model, one can observe a very strong overfitting using the default augmentation. it means that almost any additional regularization would have a noticeable effect, but it also means that что они бьют лежачего в общем    )
 
 
-The question is, when does ResNet50 stop being ResNet50? How many architecture changes is needed to be able to call it a new model? Why majority of people do not modify block structure, while making strong modifications of blocks themselves? The answer is probably because experiments on ImageNet are quite expensive and not everyone has resources and time and knowledge to explore all possible variations. This is where papers like mine come into place with thorough examination of already proposed techniques and how do they combine together
+% The question is, when does ResNet50 stop being ResNet50? How many architecture changes is needed to be able to call it a new model? Why majority of people do not modify block structure, while making strong modifications of blocks themselves? The answer is probably because experiments on ImageNet are quite expensive and not everyone has resources and time and knowledge to explore all possible variations. This is where papers like mine come into place with thorough examination of already proposed techniques and how do they combine together
 
 % когда буду говорить про переход к ResNet D нужно не просто представить новую архитектуру, а попытаться объяснить какие именно проблемы она решает. типа страйд не там или что
 
-
-(когда буду говорить про SE vs ECA сделать ремарку о том, что авторы второго не правы, когда мерят ФЛОПс и говорят что у них меньше. может быть добавить эксперименты со скоростью если делать просто GAP без каких либо операций и показать что он занимает бОльшую часть от замедления (сколько это кстати? 60? 70?))
 
 
 

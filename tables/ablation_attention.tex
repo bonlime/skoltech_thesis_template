@@ -1,0 +1,12 @@
+\begin{table}[h!]
+    \centering
+    \begin{tabular}{|p{2.9cm}|p{2.7cm}|p{2cm}|p{2.8cm}|p{2.5cm}|}
+    \hline
+    Models & Top-1 Accuracy & Params (M) & Inference Speed {[}imgs/sec{]} & Training speed {[}imgs/sec{]} \\ \hline
+    ResNet50       & 76.61          & 25.56 & \textbf{2630} & 492 \\ 
+    ResNet50 + SE  & 77.52          & 28.09 & 2280          & 438 \\ 
+    ResNet50 + ECA & \textbf{77.62} & 25.56 & 2320          & 436 \\ \hline
+    \end{tabular}
+    \caption{Comparsion of different channel attentions}
+    \label{table:se_vs_eca}
+    \end{table}

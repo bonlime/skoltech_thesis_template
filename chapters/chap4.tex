@@ -2,18 +2,122 @@
 % тут сначала про данные и задачу, плюс много слов о том, почему это валидная задача
 % потом таблички?? это в теории должна быть самая мясная часть работы и хорошо бы уже иметь хоть половину её написанной к пред защите, которая блин уже во вторник(((
 % 
-\chapter{Chapter 4. Experiments}
+\chapter{Experiments and results}
 
-\subsection{Dataset} \label{subsec: imagenet}
-
-% эту часть нужно перенести в главу 4 про эксперименты
 % (сюда можно дописать еще общих слов из \cite{beyer2020_are_we_done}) для объема
 
-Imagenet Large Scale Vision Recognition Challenge also known as ILSVRC2012 or simply Imagenet is ..... (тут чутка про историю датасета и разер и наврено можно написать что это подмножество). It has 1.3 millions training images divided into 1000 classes. Validation dataste consist of 50 thousand images, equally balanced between same 1000 classes. ILSVRC2012 is the most used dataset in computer vision (cite something, maybe after MNIST and CIFAR). In recent years with models becoming larger and demanding more and more data, it became a de-facto stardart benchmark for any new architecture. Since the breakthrought of AlexNet improving convolutional neural networks lead to improvements in other fields of computer vision. Typically researchers optimize models on classification problems using ImageNet (cite it) as proxy. It has been shown \cite{he2019bag_of_tricks} \cite{kornblith2019better} than improvments from Imagenet increase transfer learning performance other domains, for example object detection and semantic segmentation.
+This section presents the results of experiments conducted. The modifications described in Chapter \ref{sec: speed} and Chapter \ref{sec: performance} are applied one-by-one to better understand impact of each refinement. The models are evaluate on standard Imagenet training with input resolution fixed to 224, their top-1 accuracy and GPU throughput is compared to other known models such as EfficientNet \cite{tan2019_efficientnet}
+
+% First we validate out setup by re-training original ResNet50 and ResNet34 model from \cite{he2016deep_resnetv1} paper. 
 
 
-In this papepr we will use top1 1 classification accuracy on the ILSVRC2012 validation dataset as metric of model performance. It has a very strong correlation of $r=0.96$ \cite{kornblith2019better} between ImageNet accuracy and transfer accuracy, which makes it a well suitable metric.
+
+% experiment numbers from Bag of Tricks
+% Heuristic BS=256 BS=1024
+% Top-1 Top-5 Top-1 Top-5
+% Linear scaling 75.87 92.70 75.17 92.54
+% + LR warmup 76.03 92.81 75.93 92.84
+% + Zero γ 76.19 93.03 76.37 92.96
+% + No bias decay 76.16 92.97 76.03 92.86
+% + FP16 76.15 93.09 76.21 92.97
 
 
-(идея параграфа в том, что метрика не идеальная, но содйте. плюскуча рисерча накоплена в этой области, не выкидывать же его)
-While some researches has objected that it's valid, it does correlate and this is what we are interested in (cite Are we done with Imagenet....) \cite{beyer2020_are_we_done}
+% add note that while order of applying changes does matter it doesn't affect the final results. Maybe also add a note that no real conclusions about most effective regularization and training tricks could be done, because it's always order dependant. Making a legit comparison is impossible due to computation cost of Imagenet training and overhelming amount of possible variations. 
+
+
+\section{Ablation study} \label{sec:ablation}
+
+This section presents results of ablation studies, which were performed in order to validate little design choices of the final model. 
+
+\subsection{Channel Attention}
+We tested two variants of Channel Attention described in Section \ref{sec:channel-attn}: Squeeze-Excitation (SE) and Efficient Channel Attention (ECA). In both cases attention is introduced after the $3 \times 3$ convolution in Bottleneck block. As could be seen from results in Table \ref{table:se_vs_eca} ECA clearly outperforms SE both in top-1 accuracy and in inference speed. It also introduces only a negligible amount of new parameters which is beneficial as it helps to reduce overfiting. The inference speed of SE and ECA variants is very close, despite the former having much smaller number of FLOPs. It happens because of Global Average Pooling (GAP) operation present in both types of attentions, which is responsible for most of the slowdown. The models for this ablation are trained for 90 epochs using default Imagenet procedure as described in Section \ref{subsec: baseline_training}
+% TODO: resnet SE + ECA
+
+\input{tables/ablation_attention.tex}
+
+% Initialized models
+% R50 25.56M params
+% Mean of 5 runs 10 iters each BS=256, SZ=224:
+% 	 131.27+-0.08 msecs Forward. 388.78+-3.92 msecs Backward. Max memory: 10936.48Mb. 492.26 imgs/sec
+% R50 SE 28.09M params
+% Mean of 5 runs 10 iters each BS=256, SZ=224:
+% 	 146.15+-0.04 msecs Forward. 438.22+-2.55 msecs Backward. Max memory: 13771.25Mb. 438.08 imgs/sec
+% R50 ECA 25.56M params
+% Mean of 5 runs 10 iters each BS=256, SZ=224:
+% 	 145.03+-0.05 msecs Forward. 441.98+-2.51 msecs Backward. Max memory: 13863.32Mb. 436.11 imgs/sec
+
+% Initialized models
+% R50 25.56M params
+% Mean of 5 runs 10 iters each BS=256, SZ=224:
+% 	 97.41+-0.01 msecs Forward. 0.00+-0.00 msecs Backward. Max memory: 1987.86Mb. 2628.01 imgs/sec
+% R50 SE 28.09M params
+% Mean of 5 runs 10 iters each BS=256, SZ=224:
+% 	 112.30+-0.02 msecs Forward. 0.00+-0.00 msecs Backward. Max memory: 2043.68Mb. 2279.56 imgs/sec
+% R50 ECA 25.56M params
+% Mean of 5 runs 10 iters each BS=256, SZ=224:
+% 	 110.66+-0.02 msecs Forward. 0.00+-0.00 msecs Backward. Max memory: 2094.55Mb. 2313.35 imgs/sec
+
+% Ablation ECA vs SE
+% exp 108, 110, 111
+% R50 + HardReg
+% [01-11 17:22:04] - Val   loss: 1.8560 | Acc@1: 76.6160 | Acc@5: 93.3100
+% R50 + HardReg + SE
+% [01-11 23:51:53] - Val   loss: 1.8135 | Acc@1: 77.5260 | Acc@5: 93.7700
+% R50 + HardReg + ECA
+% [01-13 14:56:35] - Val   loss: 1.7983 | Acc@1: 77.6180 | Acc@5: 93.9180
+% ECA is slightly faster + have 3M less params but is still better. Pure win-win
+
+\subsection{Input stem}
+
+In neural networks first couple of layers are usually called "stem" layers, their goal is to quickly reduce the resolution of the input image. Stem layer of ResNet50 is compromised of $7 \times 7$ convolution with stride 2, followed by maxpooling with stride 2 \cite{he2016deep_resnetv1}, together this layers decrease input resolution by a factor of 4, after that the first stage of ResNet doesn't reduce resolution. We explored two possible alternatives for the default input stem. First is ResNet50-D which replaces $7 \times 7$ conv with three $3 \times 3$ layers, the idea is to achieve the same receptive field by using lower number of parameters. This does increase performance but gives a slowdown due to multiple $3 \times 3$ convolutions being slower than one $7 \times 7$ expensive convolution and having 3x number of FLOPs. Second design choice is to use Space2Depth module described in Section \ref{subsec:space2depth} to reduce resolution 2x, follow by simple convolution to match the number of input channels of the first block. Additionally we need to change stride of first stage of ResNet to perform second reduction in resolution. The proposed variants are illustrated on Figure ??? TODO: draw this figure.
+And their performance comparisons are presented in Table \ref{table:stem_comparison}. The expected improvement in GPU throughput could be clearly seen for space2depth model, the fact that performance also improves slightly is somewhat surprising. One possible explanation could be that aggressive downsampling in the default stem leads to "information loss" - details from input image are not propagated properly and some of them are lost. SpaceToDepth has almost the same receptive field ($6 \times 6$) as default stem ($ 7 \times 7$), but is both faster and gives better accuracy. So we choose it as a default stem for all our experiments.
+
+% number of FLOPs
+% default stem: 112 x 112 x (3 x 64 x 7 x 7) = 112^2 * 9408
+% ResNet-D stem: 112 x 112 x (3 x 32 x 3 x 3) + 112 x 112 (32 x 32 x 3 x 3) + 112 x 112 (32 x 64 x 3 x 3) = 112^2 * 28500
+
+% number of params
+% default: 3 x 64 x 7 x 7 = 9400
+% resnetD: 3 x 3 x (3 x 32 + 32 x 32 + 32 x 64) = 28500
+% s2d: 7000
+
+% another copy-paste from TResNet
+% SpaceToDepth: The SpaceToDepth module provides improvements to all the indices. Notice that while we are not the first to use this innovative module (see [33]), we are the first to integrate it into a high-performance network as drop-in replacement for the traditional convolution-based stem, and get a meaningful improvement. While the GPU throughput improvement is expected, the fact that also the accuracy improves (marginally) when replacing the ResNet stem cell by a ”cheaper” SpaceToDepth unit is somewhat surprising. This result supports our intuition that there could be ”information loss” within convolution-based stem unit - details from the original image are not propagated well due to the aggressive downscaling process. Although simpler, a SpaceToDepth module minimizes this loss, and enables to process the data via the residual blocks, which are protected from information loss by the skip connections. We will further investigate this issue in future works
+
+% below is copy-paste from TResNet paper
+% SpaceToDepth Stem - Neural networks usually start with a stem unit - a component whose goal is to quickly reduce the input resolution. ResNet50 stem is comprised of a stride-2 conv7x7 followed by a max pooling layer [10], which reduces the input resolution by a factor of 4 (224 → 56). ResNet50-D stem design [11], for comparison, is more elaborate - the conv7x7 is replaced by three conv3x3 layers. The new ResNet50-D stem design did improve accuracy, but at a cost of lowering the training throughput - see Table 1, where the new stem design is responsible for almost all the decline in the throughput. We wanted to replace the traditional convolution-based downscaling unit by a fast and seamless layer, with little information loss as possible, and let the well-designed residual blocks do all the actual processing work. The new stem layer sole functionality should be to downscale the input resolution to match the rest of the architecture, e.g., by a factor of 4. We met these goals by using a dedicated SpaceToDepth transformation layer [33], that rearranges blocks of spatial data into depth. Notice that in contrast to [33], which mainly used SpaceToDepth in the context of isometric (single-resolution) networks, in our novel design SpaceToDepth is used as a drop-in replacement for the tradition stem unit. The SpaceToDepth layer is followed by simple convolution, to match the number of wanted channels, as can be seen in Figure 1.
+
+% there is no real experiments with R50 + s2d. there are only experiments with already modified R34-50 network. But
+% in order not to confuse the reade I'll say it's R50
+% [08-12 04:28:27] - Acc@1 75.122 Acc@5 92.352
+% [08-12 08:02:56] - Acc@1 75.514 Acc@5 92.624    
+
+% Initialized models
+% R50 25.56M params
+% Mean of 5 runs 10 iters each BS=256, SZ=224: ~380us forward
+% 	 97.39+-0.01 msecs Forward. 0.00+-0.00 msecs Backward. Max memory: 1987.86Mb. 2628.71 imgs/sec
+% R50 s2d 25.58M params
+% Mean of 5 runs 10 iters each BS=256, SZ=224: ~350us forward
+% 	 90.61+-0.03 msecs Forward. 0.00+-0.00 msecs Backward. Max memory: 2038.88Mb. 2825.16 imgs/sec
+% R50 s2d_2 25.59M params
+% Mean of 5 runs 10 iters each BS=256, SZ=224:
+% 	 93.57+-0.11 msecs Forward. 0.00+-0.00 msecs Backward. Max memory: 2089.81Mb. 2735.78 imgs/sec
+
+% single layer benchmarking. FP16 + BS=128 + torch.cuda.benchmark=True
+% 16 threads: --------------------------------
+%       conv7x7                 |      18.6
+%       conv2x2                 |       3.7
+%       conv3x3                 |       5.2
+%       space2depth             |      10.4
+%       space2depth_jit         |      10.4
+%       conv7x7 maxpool (OS=4)  |      23.5
+%       space2depth 2x2         |       1.4
+%       conv3x3 like in s2d     |       9.0
+% Times are in microseconds (us).
+% conclusions from this table are: s2p is 2x times faster with the same respective field
+
+\input{tables/ablation_stem.tex}
+
+% TODO: ablation of ECA vs SE
+% TODO: ablation of ECA after conv1x1 vs after conv3x3
+% TODO: ablation of Cosine
