@@ -1,0 +1,79 @@
+\newcommand{\improvement}[1]{\textcolor{blue}{#1}}
+\newcommand{\decrease}[1]{\textcolor{red}{#1}}
+\newcommand{\improvementb}[1]{\textbf{#1}}
+% \newcommand{\improvementb}[1]{\textcolor{green}{\textbf{#1}}}
+\newcommand{\decreaseb}[1]{#1}
+% TODO: ask Dja what looks better, maybe don't add inference speed to first blue and green rows
+\begin{table}[ht!]
+    \begin{center}
+    \small
+    \begin{tabular}{l|cc|c}
+      \toprule
+      Improvements & Top-1 & $\Delta$  & Inference Speed\\
+      \hline
+      \hline
+      ResNet-50 & 76.7 & --- & 2630\\
+      \rowcolor{blue!15}
+      + Tune Learning Rate schedule: Stepwise $\rightarrow$ Cosine & 77.0 & \improvementb{+0.3} & 2630\\
+      \rowcolor{blue!15}
+      + Change Optimizer: SGD $\rightarrow$ RMSProp & 77.2 & \improvementb{+0.2} & 2630\\
+      \rowcolor{blue!15}
+      + Longer training: 90 epochs $\rightarrow$ 240 epochs& \;\;76.4 $^\dag$ & \decreaseb{-0.8} & 2630 \\
+      % \hdashline
+      \rowcolor{green!20}
+      + Stronger augmentations: RandAug + CutMix & 77.6 & \improvementb{+1.2} & 2630\\
+      \rowcolor{green!20}
+      + Label Smoothing & 77.9 & \improvementb{+0.3} & 2630\\
+      \rowcolor{green!20}
+      + Stochastic Depth & 78.1 & \improvementb{+0.2} & 2630\\
+      \rowcolor{green!20}
+      + EMA of weight & 78.3 & \improvementb{+0.2} & 2630\\
+      \rowcolor{green!20}
+      + Dropout on FC & \;\;78.2 $^\dagger$ & \decreaseb{-0.1} & 2630\\
+      \rowcolor{green!20}
+      + Decrease weight decay: 1e-4 $\rightarrow$ 2e-5 & 79.6 & \improvementb{+1.3} & 2630\\
+      % \hdashline
+      \rowcolor{yellow!20}
+      + Anti-Alias Downsampling & 79.8 & \improvementb{+0.2} & 2540 \\
+      \rowcolor{yellow!20}
+      + Efficient Channel Attention & 80.5 & \improvementb{+0.7} & 2235 \\
+      \rowcolor{yellow!20}
+      + Better activation: ReLU $\rightarrow$ Swish & 80.9 & \improvementb{+0.4} & 2120 \\
+      \rowcolor{yellow!20}
+      + SpaceToDepth Stem & 81.0 & \improvementb{+0.1} & 2250 \\
+      % \rowcolor{yellow!20}
+      % + Different Block Selection & 81.3 & \improvementb{+0.1} & ??? \\
+      \bottomrule
+    \end{tabular}
+    \end{center}
+    \vspace{-0.15cm}
+    \caption{\textbf{Additive study of the ResNet-50 training improvements.} The colors in the table refer to \textbf{\colorbox{blue!15}{Training Methods}}, \textbf{\colorbox{green!20}{Regularization / Augmentaion Refinements}} and \textbf{\colorbox{yellow!20}{Architecture Changes}}. See Section \ref{subsec: baseline_training} for details baseline ResNet-50 training. The image resolution for all experiments was kept fixed at $224 \times 224$. Top-1 accuracy is measured on the Imagenet \texttt{validation-set}. $^{\dag}$ The drop is due to over-fitting. Longer training only becomes useful after adding more regularization. $^{\ddagger}$ Dropout on FC leads to over regularization of the model. Improvement from this step are beneficial only after reducing weight decay.
+    %(See Table~\ref{tab:wd_analysis} for more details). I don't have this table and probably wouldn't have time for it. Leave just as a possible thing to do in the future. (lol what future). TODO: 
+    }
+    \label{tab:resnet_method_ablation}
+    \end{table}
+
+% speed measurements for models. To have a reference. Conclusion from this: 
+% AA makes it ~8% slower. but if we only use AA on main path it's 3.5% slowdown
+% ECA slowdowns by ~12% 
+% Space2Depth + 5% (because we measure with 4x4 s2d. it's cheating but nobody cares)
+
+% Initialized models
+% R50 25.56M params
+% Mean of 5 runs 10 iters each BS=256, SZ=224:
+%           97.22+-0.04 msecs Forward. 0.00+-0.00 msecs Backward. Max memory: 1987.86Mb. 2633.10 imgs/sec
+% R50-D AA 25.56M params
+% Mean of 5 runs 10 iters each BS=256, SZ=224:
+%           105.61+-0.04 msecs Forward. 0.00+-0.00 msecs Backward. Max memory: 2038.86Mb. 2424.10 imgs/sec
+% R50-D AA + ECA 25.56M params
+% Mean of 5 runs 10 iters each BS=256, SZ=224:
+%           119.27+-0.03 msecs Forward. 0.00+-0.00 msecs Backward. Max memory: 2089.75Mb. 2146.42 imgs/sec
+% R50-D AA + ECA + S2D 25.58M params
+% Mean of 5 runs 10 iters each BS=256, SZ=224:
+%           112.64+-0.04 msecs Forward. 0.00+-0.00 msecs Backward. Max memory: 2139.52Mb. 2272.76 imgs/sec
+% R50-D AA + ECA + S2D + swish 25.58M params
+% Mean of 5 runs 10 iters each BS=256, SZ=224:
+%          128.36+-0.03 msecs Forward. 0.00+-0.00 msecs Backward. Max memory: 2038.96Mb. 1994.40 imgs/sec
+% R50-D AA + ECA + S2D + swish hard 25.58M params
+% Mean of 5 runs 10 iters each BS=256, SZ=224:
+%          126.52+-0.05 msecs Forward. 0.00+-0.00 msecs Backward. Max memory: 2089.89Mb. 2023.43 imgs/sec
