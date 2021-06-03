@@ -158,11 +158,10 @@ Several papers reached the same conclusions as in the Section \ref{subsec: speed
 
 
 \subsection{Space To Depth} \label{subsec:space2depth}
-**Space-to-depth**  
 
-As pointed in previous section, convolutions benefit from high parallelism in all dimensions (depth, batch, and spatial) for better utilization of GPUs and higher speed. Space-to-depth module illustrated on \ref{fig:space2depth} increases depth dimension by rearrangin pixels from spatial dimension, while keeping the total tensor volume the same. 
+As pointed in previous section, convolutions benefit from high parallelism in all dimensions (batch, depth and spatial) for better utilization of GPUs and higher speed. Space-to-depth module \cite{ridnik2021_tresnet} \cite{li2021_searching} illustrated on \ref{fig:space2depth} increases depth dimension by rearranging pixels from spatial dimension, while keeping the total tensor volume the same. For example given tensor of size $C \times H \times W$ SpaceToDepth would reshape it to a tensor of shape $4 C \times H / 2 \times W /2$, increasing operational density for the following convolution. The increase in speed is especially important for tensors at the beginning of the network, so SpaceToDepth is most often used as a replacement for a default $7 \times 7$ convolution in the models first layer. See ablation study in Section \ref{subsec:stem_ablation} for exact speed comparison.
 
-% TODO: run speed comparison between default s2d implementation and the one proposed in Searching ... with conv2x2 stride 2
+% see Ablation section for exact time measurements of different stems
 
 \begin{figure}[h!]
     \centering
@@ -174,34 +173,29 @@ As pointed in previous section, convolutions benefit from high parallelism in al
 
 
 
+\subsection{Fused Mobile Bottleneck Convolution (FusedMBConv)}
 
-Тут хочется привести пример Space2Depth модуля, который повышает эффективность за счет увеличения плотности операций в начале сети. 
+In the design of small and efficient networks for mobile devices a dominant and most widely used block is a so-called Mobile Bottleneck (MBConv) first proposed in \cite{howard2017_mobilenetv1} and widely used after that \cite{howard2019_searching_mobilenetv3} % TODO: add more citations here
+MBConv consists of $1 \times 1$ conv $\rightarrow$ Depthwise conv $\rightarrow$ $1\times 1$ conv. As been noted in previous sections both $1\times 1$ and DepthWise convolutions could become memory-bounded if used at the beginning of the networks. The possible solution to avoid such bottleneck is to combined first two convolution together. This newly proposed block is called FusedMBConv and was first proposed in \cite{li2021_searching} and lately used in \cite{tan2021_efficientnetv2}, the Figure \ref{fig:fusedmbconv} illustrates the difference between MBConv and FusedMBConvs
 
- + тут можно написать про FusedConv который есть в EffNet v2, но появился вроде в EffNetX (??) 
+\begin{figure}[h!]
+    \centering
+        \includegraphics[clip, height=5cm]{images/fusedmbconv.pdf}
+    % \caption{SpaceToDepth module rearranges pixels from spatial dimension into channel dimension.} 
+    \caption{Structure of Mobile Bottleneck Convolution (MBConv) and Fused-MBConv}
+    \label{fig:fusedmbconv}
+    \end{figure}
+
+
+
+
+%  + тут можно написать про FusedConv который есть в EffNet v2, но появился вроде в EffNetX (??) 
 % кусок нагло спизжен из Searching for Fast .... нужно будет переписать. 
-еще про space2depth написано в статье \cite{ridnik2021_tresnet}
+% еще про space2depth написано в статье \cite{ridnik2021_tresnet}
 
 
-3.1. Efficient space-to-depth and space-to-batch
-As pointed out in Section 2, convolutions need high parallelism in all dimensions (depth, batch, and spatial) to achieve high speed on TPUs and GPUs. However, insufficient parallelism because of the small depth and batch is the usual cause of low utilization and low performance on matrix units. We augment the search space with accelerator-friendly spaceto-depth and space-to-batch ops to increase depth and batch dimensions while keeping the total tensor volume the same. For space-to-depth ops, instead of using the memorycopy-reshape based ops provided by frameworks such as TensorFlow [6] and Pytorch [42], we customize an $n \times n$ convolution with stride-n to perform the space-to-depth operation, reshaping an $H \times W \times C$ tensor to an $H / n \times W / n \times C * n^{2}$ tensor. This approach has two advantages: 1) convolutions are much preferred by TPUs and GPUs because of their high operational intensity and execution efficiency; 2) in addition to reshaping the input tensor to improve operational intensity and efficiency, the $n \times n$ convolutions can also be trained
+% 3.1. Efficient space-to-depth and space-to-batch
+% As pointed out in Section 2, convolutions need high parallelism in all dimensions (depth, batch, and spatial) to achieve high speed on TPUs and GPUs. However, insufficient parallelism because of the small depth and batch is the usual cause of low utilization and low performance on matrix units. We augment the search space with accelerator-friendly spaceto-depth and space-to-batch ops to increase depth and batch dimensions while keeping the total tensor volume the same. For space-to-depth ops, instead of using the memorycopy-reshape based ops provided by frameworks such as TensorFlow [6] and Pytorch [42], we customize an $n \times n$ convolution with stride-n to perform the space-to-depth operation, reshaping an $H \times W \times C$ tensor to an $H / n \times W / n \times C * n^{2}$ tensor. This approach has two advantages: 1) convolutions are much preferred by TPUs and GPUs because of their high operational intensity and execution efficiency; 2) in addition to reshaping the input tensor to improve operational intensity and efficiency, the $n \times n$ convolutions can also be trained
  
 % кусок из основной статье про TResNet. нужно переписать так, чтобы это не сильно пересекалось с тем, что написано в ablation про input stem
-SpaceToDepth Stem - Neural networks usually start
-with a stem unit - a component whose goal is to quickly
-reduce the input resolution. ResNet50 stem is comprised
-of a stride-2 conv7x7 followed by a max pooling layer
-[10], which reduces the input resolution by a factor of 4
-(224 → 56). ResNet50-D stem design [11], for comparison, is more elaborate - the conv7x7 is replaced by three
-conv3x3 layers. The new ResNet50-D stem design did
-improve accuracy, but at a cost of lowering the training
-throughput - see Table 1, where the new stem design is responsible for almost all the decline in the throughput.
-We wanted to replace the traditional convolution-based
-downscaling unit by a fast and seamless layer, with little information loss as possible, and let the well-designed residual blocks do all the actual processing work. The new stem
-layer sole functionality should be to downscale the input
-resolution to match the rest of the architecture, e.g., by a
-factor of 4. We met these goals by using a dedicated SpaceToDepth transformation layer [33], that rearranges blocks
-of spatial data into depth. Notice that in contrast to [33],
-which mainly used SpaceToDepth in the context of isometric (single-resolution) networks, in our novel design SpaceToDepth is used as a drop-in replacement for the tradition
-stem unit. The SpaceToDepth layer is followed by simple
-convolution, to match the number of wanted channels, as
-can be seen in Figure 1.
+% SpaceToDepth Stem - Neural networks usually start with a stem unit - a component whose goal is to quickly reduce the input resolution. ResNet50 stem is comprised of a stride-2 conv7x7 followed by a max pooling layer [10], which reduces the input resolution by a factor of 4 (224 → 56). ResNet50-D stem design [11], for comparison, is more elaborate - the conv7x7 is replaced by three conv3x3 layers. The new ResNet50-D stem design did improve accuracy, but at a cost of lowering the training throughput - see Table 1, where the new stem design is responsible for almost all the decline in the throughput. We wanted to replace the traditional convolution-based downscaling unit by a fast and seamless layer, with little information loss as possible, and let the well-designed residual blocks do all the actual processing work. The new stem layer sole functionality should be to downscale the input resolution to match the rest of the architecture, e.g., by a factor of 4. We met these goals by using a dedicated SpaceToDepth transformation layer [33], that rearranges blocks of spatial data into depth. Notice that in contrast to [33], which mainly used SpaceToDepth in the context of isometric (single-resolution) networks, in our novel design SpaceToDepth is used as a drop-in replacement for the tradition stem unit. The SpaceToDepth layer is followed by simple convolution, to match the number of wanted channels, as can be seen in Figure 1.
