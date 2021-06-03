@@ -4,10 +4,28 @@
 % 
 \chapter{Experiments and results}
 
-\input{tables/main_results.tex}
+\input{tables/results_main.tex}
 % (сюда можно дописать еще общих слов из \cite{beyer2020_are_we_done}) для объема
 
-This section presents the results of experiments conducted. The modifications described in Chapter \ref{sec:speed} and Chapter \ref{sec: performance} are applied one-by-one to better understand impact of each refinement. The models are evaluate on standard Imagenet training with input resolution fixed to 224, their top-1 accuracy and GPU throughput is compared to other known models such as EfficientNet \cite{tan2019_efficientnet}
+This section presents the results of experiments conducted. The modifications described in Chapter \ref{sec:speed} and Chapter \ref{sec: performance} are applied one-by-one to better understand impact of each refinement. The models are evaluate on standard Imagenet training with input resolution fixed to 224, their top-1 accuracy and GPU throughput is compared to other known models such as EfficientNet \cite{tan2019_efficientnet}. The baseline ResNet50 gets 76.7\% top-1 accuracy on our codebase which is on par with original results of 76.5\%. We improve its performance up to 79.6\% (+\textcolor{blue}{+3.1\%}) by \textit{better training methods alone}. By adding several common and simple changes in architecture (AA-downsampling, Efficient Channel Attention, Improved Stem and Swish activation) the performance could be further boosted up to 81.0\%. We demonstrate that majority of the improvement comes from training methods rather than architecture modifications, despite training methods often perceived as a less important factor for CNNs.  
+
+Table \ref{tab:resnet_method_ablation} presents an additive study of training, augmentation/regularization and architectural changes. We find it's important to reduce weight decay factor after a sufficient number of regularization methods have been added, in order to avoid over-regularizing network. Smaller weight decay values has been used in other works \cite{tan2019_efficientnet} \cite{bello2021_revisiting_resnet} but they didn't point out the importance of it in presence of extra regularization. Due to limited resources we didn't perform ablation study for best weight decay, reducing it to 2e-5 worked well in our experiments.
+
+\section{Setup}
+All training was performed on 4 x Tesla V100 GPUs with batch size 256 per device (1024 in total for most experiments). We used linear learning rate warmup for first 5 epochs. Base learning rate was fixed at 0.1 per 256 batch (0.4 in our experiments with 1024 batch size) for SGD and 0.016 for RMSProp optimizer (0.064 in our experiments with 1024 batch size). We use momentum in optimizer 0.9, batch norm momentum 0.99. For exponential moving average we use momentum 0.9995 inspired by \cite{tan2021_efficientnetv2}. We Cutmix we set alpha to 0.1. Dropout on last Fully Connected layer is increased from 0 at the beginning of the training to 0.2 at 50-th epoch. Survival probability in Drop Block is linearly decreased each network block from 1 to 0.8. For Label Smoothing we use smoothing value of 0.1.  
+
+\section{Architecture changes}
+We call the best model from Table \ref{tab:resnet_method_ablation} as ResNet50-AA-ECA-S2D. Visualization of it's architecture could be seen on Figure \ref{fig: resnet-aa-eca-s2d}, compared to default 
+
+% RMSProp optimizer with decay 0.9 and
+% momentum 0.9; batch norm momentum 0.99; weight decay 1e-5. Each model is trained for 350 epochs with total
+% batch size 4096. Learning rate is first warmed up from 0
+% to 0.256, and then decayed by 0.97 every 2.4 epochs. We
+% use exponential moving average with 0.9999 decay rate,
+% RandAugment (Cubuk et al., 2020), Mixup (Zhang et al.,
+% 2018), Dropout (Srivastava et al., 2014), and stochastic
+% depth (Huang et al., 2016) with 0.8 survival probability
+
 
 % First we validate out setup by re-training original ResNet50 and ResNet34 model from \cite{he2016deep_resnetv1} paper. 
 

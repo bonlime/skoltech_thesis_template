@@ -1,13 +1,17 @@
 % TODO: make table centered
 \begin{table}[h!]
-    \centering
-    \begin{tabular}{|p{3.1cm}|p{2.7cm}|p{2cm}|p{2.8cm}|p{2cm}|}
-    \hline
-    Models & Top-1 Accuracy & Params (M) & Inference Speed {[}imgs/sec{]} \\ \hline
-    ResNet50         & 76.61 & 25.56 & 2630 \\ 
-    ResNet50-D Stem  & 76.87 & 25.58 & 2440 \\ 
-    ResNet50 + s2d   & \textbf{76.95} & 25.59 & \textbf{2825} \\ \hline
-    \end{tabular}
-    \caption{Comparison of different input stems.}
+    % \centering
+    \begin{center}
+        \small
+        % \begin{tabular}{|p{3.1cm}|p{2.7cm}|p{2cm}|p{2.8cm}|p{2cm}|}
+        \begin{tabular}{|l|c|c|c|c|}
+            \hline
+            Models & Top-1 Accuracy & Params (M) & Inference Speed \\ \hline
+            ResNet50         & 76.61 & 25.56 & 2630 \\ 
+            ResNet50-D Stem  & 76.87 & 25.58 & 2440 \\ 
+            ResNet50 + s2d   & \textbf{76.95} & 25.59 & \textbf{2825} \\ \hline
+        \end{tabular}
+    \end{center} 
+    \caption{Comparison of different input stems. Inference Speed is in [imgs/sec] }
     \label{table:stem_comparison}
-    \end{table}
+\end{table}
