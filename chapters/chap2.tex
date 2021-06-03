@@ -154,22 +154,21 @@ Compute on modern accelerators due to use of matrix-multiply-and-accumulate unit
 
 \section{Applying principle on practice}
 % \section{Examples of optimization}
-Several papers reached the same conclusions as in the section \ref{subsec: speed_conclusion} \cite{li2021_searching} \cite{lin2020neural_genet} and applied them on practice. Here we present example blocks which try to increase operational density for achieving higher latency and speed. 
+Several papers reached the same conclusions as in the Section \ref{subsec: speed_conclusion}: \cite{li2021_searching} \cite{lin2020neural_genet} and applied them on practice. Here we present example blocks which try to increase operational density for achieving higher latency and speed. 
 
 
 \subsection{Space To Depth} \label{subsec:space2depth}
 **Space-to-depth**  
 
-As pointed in previous section, convolutions benefit from high parallelism in all dimensions (depth, batch, and spatial) for better utilization of GPUs and higher speed. Space-to-depth module illustrated on \ref{fig: space2depth} increases depth dimension by rearrangin pixels from spatial dimension, while keeping the total tensor volume the same. 
+As pointed in previous section, convolutions benefit from high parallelism in all dimensions (depth, batch, and spatial) for better utilization of GPUs and higher speed. Space-to-depth module illustrated on \ref{fig:space2depth} increases depth dimension by rearrangin pixels from spatial dimension, while keeping the total tensor volume the same. 
 
 % TODO: run speed comparison between default s2d implementation and the one proposed in Searching ... with conv2x2 stride 2
 
 \begin{figure}[h!]
     \centering
-        
         \includegraphics[clip, trim=0cm 1.4cm 0cm 0cm, height=5cm]{images/space2depth.pdf}
     \caption{SpaceToDepth module rearranges pixels from spatial dimension into channel dimension.} 
-    \label{fig: space2depth}
+    \label{fig:space2depth}
     \end{figure}
 
 
