@@ -1,22 +1,23 @@
-\begin{table}[t]
-\small
-\tabcolsep=0.07cm
-\begin{tabular}{@{}ccccc@{}}
- & Original  &  Mixup \cite{zhang2017_mixup} & CutMix \cite{yun2019_cutmix}\\
-\multirow{4}{*}{Image} &  \multirow{4}{*}{\includegraphics[width=0.10\linewidth]{images/dog.png}}
- &  \multirow{4}{*}{\includegraphics[width=0.10\linewidth]{images/dog_mixup.png}}
- &  \multirow{4}{*}{\includegraphics[width=0.10\linewidth]{images/dog_cutmix.png}} \\ 
- & & & \\ 
- & & & \\
- & & & \\ \midrule
- %
-\multirow{2}{*}{Label} 
-&\multirow{2}{*}{Dog 1.0}
-&\multirow{2}{*}{\begin{tabular}[c]{@{}c@{}}Dog 0.5\\ Cat 0.5\end{tabular}}
-&\multirow{2}{*}{\begin{tabular}[c]{@{}c@{}}Dog 0.6\\ Cat 0.4\end{tabular}} \\ 
-  & & & \\  \toprule
+\begin{table}[h!]
+  \centering
+  \small
+  \tabcolsep=0.07cm
+  \begin{tabular}{@{}ccccc@{}}
+  & Original  &  Mixup \cite{zhang2017_mixup} & CutMix \cite{yun2019_cutmix}\\
+  \multirow{4}{*}{Image} &  \multirow{4}{*}{\includegraphics[width=0.10\linewidth]{images/dog.png}}
+  &  \multirow{4}{*}{\includegraphics[width=0.10\linewidth]{images/dog_mixup.png}}
+  &  \multirow{4}{*}{\includegraphics[width=0.10\linewidth]{images/dog_cutmix.png}} \\ 
+  & & & \\ 
+  & & & \\
+  & & & \\ \midrule
+  %
+  \multirow{2}{*}{Label} 
+  &\multirow{2}{*}{Dog 1.0}
+  &\multirow{2}{*}{\begin{tabular}[c]{@{}c@{}}Dog 0.5\\ Cat 0.5\end{tabular}}
+  &\multirow{2}{*}{\begin{tabular}[c]{@{}c@{}}Dog 0.6\\ Cat 0.4\end{tabular}} \\ 
+    & & & \\  \toprule
 
-\end{tabular}
-\caption{Example of Mixup/CutMix augmentations}
-\label{tab:cutmix}
-\end{table}
+  \end{tabular}
+  \caption{Example of Mixup/CutMix augmentations}
+  \label{tab:cutmix}
+  \end{table}

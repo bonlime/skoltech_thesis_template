@@ -1,4 +1,4 @@
-\chapter{Performance} \label{sec: performance}
+\chapter{Performance} \label{chap:performance}
 %% TODO: maybe think about renaming this chapter into something else, because we here not only talk about performance but also introduce all training/architecture modifications
 
 Models suitable for real-life deployment should be not only fast but also accurate. Definition of "accurate" differs in literature. In this paper we use top-1 classification accuracy on imagenet as proxy for model performance on down-stream tasks, see Section \ref{subsec: imagenet} for detailed discussion. 
@@ -61,11 +61,11 @@ This training pipeline described above was de-facto standard for researchers of 
 This section briefly presents the ResNet architecture, especially its modules. For detailed information please refer to \cite{he2016deep_resnetv1}
 
 
-\begin{figure}[h!]
+\begin{figure}[ht!]
     \centering
-    \label{fig: resnet-a}
     \includegraphics[width=0.5\textwidth]{images/resnet-a.pdf}
     \caption{The architecture of ResNet-50. The convolution kernel size, output channel size and stride size (default is 1) are illustrated, similar for pooling layers}
+    \label{fig: resnet-a}
   \end{figure}
 
 
@@ -128,13 +128,14 @@ Default augmentations used in Imagenet training described in Section \ref{subsec
     \item RanAug \cite{cubuk2020_randaugment} also applies reinforcement learning, but to a significantly reduced search space in order to find sequence of random image transformations (e.g. translate, shear, color distortions) for each image
 \end{itemize}
 
-\begin{figure}[h!]
-    \caption{One of the successful policies on ImageNet. As described in the text, most of the policies found on ImageNet used color-based transformations.}
-    \label{fig: randaug}
+\begin{figure}[ht!]
+    \centering
     \includegraphics[width=0.5\textwidth]{images/randaug_policy.png}
+    \caption{One of the successful policies on ImageNet. As described in the text, most of the policies found on ImageNet used color-based transformations.}
+    \label{fig:randaug}
   \end{figure}
 
-Both of this policies use extensive amount of augmentations in the color domain combined with hard affine transformations like rotation and shear. Example of augmentations could be seen on Figure \ref{fig: randaug}
+Both of this policies use extensive amount of augmentations in the color domain combined with hard affine transformations like rotation and shear. Example of augmentations could be seen on Figure \ref{fig:randaug}
 From out experiments we found that RandAug slightly outperforms AutoAugment, so we use the former later in the text. The exact definition of RandAug augmentation strategy on Imagenet could be found in Appendix. 
 % TODO: add RandAug strategy to appendix.
 
@@ -269,7 +270,7 @@ Another design choice is the location of channel attention inside model block. I
   \caption{SE vs ECA comparsion. TODO. rewrite caption.}
   % One of the successful policies on ImageNet. As described in the text, most of the policies found on ImageNet used color-based transformations.}
   \label{fig: se-eca}
-  \includegraphics[width=1\textwidth]{images/eca_module.jpg}
+  \includegraphics[width=1\textwidth]{images/eca_module.png}
 \end{figure}
 
 
