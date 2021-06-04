@@ -18,6 +18,15 @@ All training was performed on 4 x Tesla V100 GPUs with batch size 256 per device
 \section{Architecture changes}
 We call the best model from \autoref{tab:resnet_method_ablation} as ResNet50-AA-ECA-S2D. Visualization of it's architecture could be seen on Figure \ref{fig: resnet-aa-eca-s2d}, compared to default 
 
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.8\textwidth]{images/full_network.pdf}
+    \caption{Architecture of proposed ResNet50-AA-ECA-S2D model.}
+    \label{fig:resnet-aa-eca-s2d}
+  \end{figure}
+
+
 % RMSProp optimizer with decay 0.9 and
 % momentum 0.9; batch norm momentum 0.99; weight decay 1e-5. Each model is trained for 350 epochs with total
 % batch size 4096. Learning rate is first warmed up from 0
@@ -36,13 +45,13 @@ We call the best model from \autoref{tab:resnet_method_ablation} as ResNet50-AA-
 % Heuristic BS=256 BS=1024
 % Top-1 Top-5 Top-1 Top-5
 % Linear scaling 75.87 92.70 75.17 92.54
-% + LR warmup 76.03 92.81 75.93 92.84
+% + LR warm-up 76.03 92.81 75.93 92.84
 % + Zero γ 76.19 93.03 76.37 92.96
 % + No bias decay 76.16 92.97 76.03 92.86
 % + FP16 76.15 93.09 76.21 92.97
 
 
-% add note that while order of applying changes does matter it doesn't affect the final results. Maybe also add a note that no real conclusions about most effective regularization and training tricks could be done, because it's always order dependant. Making a legit comparison is impossible due to computation cost of Imagenet training and overhelming amount of possible variations. 
+% add note that while order of applying changes does matter it doesn't affect the final results. Maybe also add a note that no real conclusions about most effective regularization and training tricks could be done, because it's always order dependant. Making a legit comparison is impossible due to computation cost of Imagenet training and overwhelming amount of possible variations. 
 
 
 \section{Ablation study} \label{sec:ablation}

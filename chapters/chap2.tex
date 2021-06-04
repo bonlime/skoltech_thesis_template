@@ -10,7 +10,9 @@
 
 Real world tasks often have computational constrains on the design of architectures. Design of light-weight models with good speed-accuracy tradeoffs has been explored extensively before \cite{howard2017_mobilenetv1} \cite{sandler2018_mobilenetv2} \cite{ma2018_shufflenetv2} \cite{zhang2018_shufflenet}.  % \cite{Xception} 
 
-To measure complexity of the model some works use number of computations it does. Examples of such metrics are floating point operations (FLOPs) and multiply-accumulate operations (MACCs). Other focus on minimizing of number of trainable parameters. This metrics are indirect approximation of direct metric such as speed or latency. Previous works has shown \cite{radosavovic2020_designing} \cite{lee2020_compounding_improvements} that factors affecting inference latency on modern accelerators are complicated and direct measurement on target device should be preferred. This phenomenon is illustrated on \autoref{fig:fps_from_params}, which shows that speed doesn't correlate with number of model parameters.   
+To measure complexity of the model some works use number of computations it does. Examples of such metrics are floating point operations (FLOPs) and multiply-accumulate operations (MACCs). Other focus on minimizing of number of trainable parameters. This metrics are indirect approximation of direct metric such as speed or latency. 
+
+Previous works has shown \cite{radosavovic2020_designing} \cite{lee2020_compounding_improvements} that there are many factors affecting the latency of model inference and speed should preferably be measured directly on a target device. This phenomenon is illustrated on \autoref{fig:fps_from_params}, which shows that speed doesn't correlate with number of model parameters.   
 % TODO actually draw this figure
 
 \begin{wrapfigure}{r}{0.25\textwidth} %this figure will be at the right
@@ -34,7 +36,14 @@ This works focuses on optimizing and developing networks specially optimized for
 
 "It’s dot products all the way down" 
 
-Many of the computations inside neural networks are dot products like this: $y = w[0]*x[0] + w[1]*x[1] + \ldots + w[n] * x[n]$ where $w$ and $x$ are two vectors and $y$ is a scalar. There are two main ways to calculate number of computations in such operation. First is to count $ w[0] * x[0] + \ldots $ as single multiply-accumulate or 1 \textbf{MACC}. The \textit{accumulation} operation here is addition. In the example above we have $n$ MACCs. \footnote{Technically speaking there are only n - 1 additions in the example above. Think of MACCs as being an approximation, similar to Big-O notation used in approximation of algorithm complexity.}
+Main computation inside most CNNs are dot products. For two vectors $w$ and $x$ it can be defined as: $y = w[0]*x[0] + w[1]*x[1] + \ldots + w[n] * x[n]$ where $y$ is a scalar.
+There are two main ways to calculate number of computations in such operation. First is to name this as one multiply-accumulate operation or 1 \textbf{MACC}. \textit{Accumulation} operation is this case is addition. Above example has $n$ MACCs. 
+
+
+\footnote{Actual number of additions in the above example is $n - 1$. Think of MACCs as being an approximation, similar to Big-O notation used in approximation of algorithm complexity.}
+
+
+% Many of the computations inside neural networks are dot products like this: $y = w[0]*x[0] + w[1]*x[1] + \ldots + w[n] * x[n]$ where $w$ and $x$ are two vectors and $y$ is a scalar. There are two main ways to calculate number of computations in such operation. First is to count $ w[0] * x[0] + \ldots $ as single multiply-accumulate or 1 \textbf{MACC}. The \textit{accumulation} operation here is addition. In the example above we have $n$ MACCs. \footnote{Technically speaking there are only n - 1 additions in the example above. Think of MACCs as being an approximation, similar to Big-O notation used in approximation of algorithm complexity.}
 
 Second is to count number of direct floating point operations (\textbf{FLOPs}), in the example above there are $2n - 1$ FLOPs, since there are n multiplications and n additions. FLOPs should not be confused with floating point operations per second (FLOPS) used to measure hardware performance. Because matrix-multiplications is the core operation in neural networks, many modern accelerators have special multiply-and-accumulate units, called tensor cores 
 % \cite Volte: performance and programmability 
