@@ -10,14 +10,20 @@
 
 Real world tasks often have computational constrains on the design of architectures. Design of light-weight models with good speed-accuracy tradeoffs has been explored extensively before \cite{howard2017_mobilenetv1} \cite{sandler2018_mobilenetv2} \cite{ma2018_shufflenetv2} \cite{zhang2018_shufflenet}.  % \cite{Xception} 
 
-To measure complexity of the model some works use number of computations it does. Examples of such metrics are floating point operations (FLOPs) and multiply-accumulate operations (MACCs). Other focus on minimizing of number of trainable parameters. This metrics are indirect approximation of direct metric such as speed or latency. Previous works has shown \cite{radosavovic2020_designing} \cite{lee2020_compounding_improvements} that factors affecting inference latency on modern accelerators are complicated and direct measurement on target device should be preferred. (тут можно еще цитирований из \cite{ma2018_shufflenetv2} p.2 набрать). This phenomenon is illustrated on Figure {???}, which shows that speed doesn't correlate with number of FLOPs.   
+To measure complexity of the model some works use number of computations it does. Examples of such metrics are floating point operations (FLOPs) and multiply-accumulate operations (MACCs). Other focus on minimizing of number of trainable parameters. This metrics are indirect approximation of direct metric such as speed or latency. Previous works has shown \cite{radosavovic2020_designing} \cite{lee2020_compounding_improvements} that factors affecting inference latency on modern accelerators are complicated and direct measurement on target device should be preferred. This phenomenon is illustrated on \autoref{fig:fps_from_params}, which shows that speed doesn't correlate with number of model parameters.   
 % TODO actually draw this figure
+
+\begin{wrapfigure}{r}{0.25\textwidth} %this figure will be at the right
+    \centering
+    \includegraphics[width=0.26\textwidth]{images/fps_from_params.pdf}
+    \caption{Inference speed vs Number of parameters for several classification models. It can be seen that they speed have very low correlation with number of parameters and thus FLOPs.}   \label{fig:fps_from_params}
+\end{wrapfigure}
 
 The goal of this chapter is to explore bottlenecks induced by FLOPs oriented optimizations and show that taking into consideration limitations of current accelerators could help to develop guidelines for architecture design which do not compromise speed. We first explore the memory-bound problem theoretically, then prove out reasoning with experiments on current GPU accelerators, and finally come up with simple principles to follow. 
 
-The deep learning models could be run on CPU or on a number of other accelerators. Most popular ones being GPUs (graphic processing units) and TPUs (Tensor processing units), ... (тут примеры других ускорителей). (тут статистика по использованию акслелераторов)
-
-This works focuses on optimizing and developing networks specially optimized for \textbf{modern GPUs}, such narrow focus allows to better utilize the knowledge about what constrains speed the most. Obtained results may not be applicable if models have to be run on CPUs or mobile devices (тут можно что-то из Effnet lite процитировать). 
+The deep learning models could be run on CPU or on a number of other accelerators. Most popular ones being GPUs (graphic processing units) and TPUs (Tensor processing units). 
+%, ... (тут примеры других ускорителей). (тут статистика по использованию акслелераторов)
+This works focuses on optimizing and developing networks specially optimized for \textbf{modern GPUs}, such narrow focus allows to better utilize the knowledge about what constrains speed the most. Obtained results may not be applicable if models have to be run on CPUs or mobile devices. % (тут можно что-то из Effnet lite процитировать). 
 
 
 
@@ -28,7 +34,7 @@ This works focuses on optimizing and developing networks specially optimized for
 
 "It’s dot products all the way down" 
 
-Many of the computations inside neural networks are dot products like this: $y = w[0]*x[0] + w[1]*x[1] + \ldots + w[n] * x[n]$ where $w$ and $x$ are two vectors and $y$ is a scalar. There are two main ways to calculate number of computations in such operation. First is to count $ w[0] * x[0] + \ldots $ as one multiply-accumulate or 1 \textbf{MACC}. The \textit{accumulation} operation here is addition. In the example above we have $n$ MACCs. \footnote{Technically speaking there are only n - 1 additions in the example above. Think of MACCs as being an approximation, similar to Big-O notation used in approximation of algorithm complexity.}
+Many of the computations inside neural networks are dot products like this: $y = w[0]*x[0] + w[1]*x[1] + \ldots + w[n] * x[n]$ where $w$ and $x$ are two vectors and $y$ is a scalar. There are two main ways to calculate number of computations in such operation. First is to count $ w[0] * x[0] + \ldots $ as single multiply-accumulate or 1 \textbf{MACC}. The \textit{accumulation} operation here is addition. In the example above we have $n$ MACCs. \footnote{Technically speaking there are only n - 1 additions in the example above. Think of MACCs as being an approximation, similar to Big-O notation used in approximation of algorithm complexity.}
 
 Second is to count number of direct floating point operations (\textbf{FLOPs}), in the example above there are $2n - 1$ FLOPs, since there are n multiplications and n additions. FLOPs should not be confused with floating point operations per second (FLOPS) used to measure hardware performance. Because matrix-multiplications is the core operation in neural networks, many modern accelerators have special multiply-and-accumulate units, called tensor cores 
 % \cite Volte: performance and programmability 
@@ -65,9 +71,9 @@ Mixing channels is important for  neural networks, so the depthwise is more comm
 
 \begin{figure}[h]
     \centering
-         \includegraphics[width=0.13\textwidth]{images/conv.pdf}
+         \includegraphics[width=0.26\textwidth]{images/conv.pdf}
          \hfil
-         \includegraphics[width=0.2\textwidth]{images/conv_DepSep.pdf}
+         \includegraphics[width=0.4\textwidth]{images/conv_DepSep.pdf}
     \caption{Standard convolution and depthwise separable convolution.}   \label{fig: convs}
     \end{figure}
 
@@ -180,7 +186,7 @@ MBConv consists of $1 \times 1$ conv $\rightarrow$ Depthwise conv $\rightarrow$ 
 
 \begin{figure}[h!]
     \centering
-        \includegraphics[clip, height=5cm]{images/fusedmbconv.pdf}
+        \includegraphics[clip, height=8cm]{images/fusedmbconv.pdf}
     % \caption{SpaceToDepth module rearranges pixels from spatial dimension into channel dimension.} 
     \caption{Structure of Mobile Bottleneck Convolution (MBConv) and Fused-MBConv}
     \label{fig:fusedmbconv}

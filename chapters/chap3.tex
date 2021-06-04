@@ -63,7 +63,7 @@ This section briefly presents the ResNet architecture, especially its modules. F
 
 \begin{figure}[ht!]
     \centering
-    \includegraphics[width=0.5\textwidth]{images/resnet-a.pdf}
+    \includegraphics[width=0.7\textwidth]{images/resnet-a.pdf}
     \caption{The architecture of ResNet-50. The convolution kernel size, output channel size and stride size (default is 1) are illustrated, similar for pooling layers}
     \label{fig: resnet-a}
   \end{figure}
@@ -130,8 +130,8 @@ Default augmentations used in Imagenet training described in Section \ref{subsec
 
 \begin{figure}[ht!]
     \centering
-    \includegraphics[width=0.5\textwidth]{images/randaug_policy.png}
-    \caption{One of the successful policies on ImageNet. As described in the text, most of the policies found on ImageNet used color-based transformations.}
+    \includegraphics[width=0.8\textwidth]{images/randaug_policy.png}
+    \caption{Example of RandAug policies on ImageNet. As described in the text, most of the policies found on ImageNet used color-based transformations.}
     \label{fig:randaug}
   \end{figure}
 
@@ -261,7 +261,7 @@ Squeeze and Excitation (SE) network tries to enhance the representational capaci
 
 \paragraph{Efficient Channel Attention} This variant of attention tries to fix the existing flows of Squeeze-Excitation module and by avoiding dimensionality reduction and capturing cross-channel interaction in an efficient way. It brings a better performance that SE, while only introduction a handful of parameters. This module could be efficiently implemented using $1 D $ convolutions. 
 
-Another design choice is the location of channel attention inside model block. It could be applied either after second $3 \times 3$ (spatial) convolution or after last $1 \times 1 $ (pointwise) convolution. Both options are used in the literature \cite{tan2019_efficientnet} \cite{tan2021_efficientnetv2} \cite{lin2020neural_genet}. We follow EfficientNet v2 \cite{tan2021_efficientnetv2} and apply attention after spatial convolution because in our ablation study it performs slightly better.  See Section \ref{sec:ablation} for details. % TODO: create an ablation table which validates this claim
+Another design choice is the location of channel attention inside model block. It could be applied either after second $3 \times 3$ (spatial) convolution or after last $1 \times 1 $ (pointwise) convolution. Both options are used in the literature \cite{tan2019_efficientnet} \cite{tan2021_efficientnetv2} \cite{lin2020neural_genet}. We follow EfficientNet v2 \cite{tan2021_efficientnetv2} and apply attention after spatial convolution because in our experiments it also performs slightly better. % No ablation for this. See Section \ref{sec:ablation} for details. % TODO: create an ablation table which validates this claim
 
 
 % TODO: redraw this figure. remove Adaptive selection of kernel 
@@ -284,12 +284,21 @@ Where $\mathcal{F}$ calculates output of residual block which consists of Conv $
 
 % TODO: ideally - redraw this figure. or at least embed in correctly. 
 % TODO: add plot for Linear Bottleneck which is the same as original block but without last ReLU
+% \begin{figure}[h!]
+%   \caption{ (a) original Residual Unit in [1]; (b) proposed Residual Unit}
+%   % The grey arrows indicate the easiest paths for the information to propagate, corresponding to the additive term “xl” in Eqn.(4) (forward propagation) and the additive term “1” in Eqn.(5) (backward propagation).
+%   \label{fig: pre-act}
+%   \includegraphics[clip, trim=0cm 0cm 13.5cm 0cm, scale=.55]{images/preact1.pdf}
+% \end{figure}
+
 \begin{figure}[h!]
-  \caption{ (a) original Residual Unit in [1]; (b) proposed Residual Unit}
+  \centering
   % The grey arrows indicate the easiest paths for the information to propagate, corresponding to the additive term “xl” in Eqn.(4) (forward propagation) and the additive term “1” in Eqn.(5) (backward propagation).
+  \includegraphics[width=0.5\textwidth]{images/blocks.pdf}
+  \caption{ (a) original Residual Unit \cite{he2016deep_resnetv1}; (b) Linear Bottleneck \cite{sandler2018_mobilenetv2} (c) Pre-Activation Bottleneck \cite{he2016identity_resnetv2}}
   \label{fig: pre-act}
-  \includegraphics[clip, trim=0cm 0cm 13.5cm 0cm, scale=.55]{images/preact1.pdf}
 \end{figure}
+
 
 \subsection{Linear Bottleneck}
 "Linear Bottleneck" \cite{sandler2018_mobilenetv2} tries to improve information propagation inside ResNet by removing the last ReLU activation from default block. The motivation for this is similar to Pre-Activation blocks - to prevent non-linearities from destroying too much information in the main path. We perform and ablation study between Pre-Activation and Linear Blocks later in Section \ref{sec:ablation}
